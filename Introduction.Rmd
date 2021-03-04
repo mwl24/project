@@ -2,20 +2,144 @@
 title: "Introduction"
 author: "Michael Li"
 date: "March 1, 2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r, echo = F, warning = F, message = F}
 library(readxl)
+library(ggplot2)
+library(tidyverse)
+library(sjlabelled)
 ```
 
-```{r}
+```{r, echo = F, warning = F, message = F}
 df <- read_excel("data/navco3-0full.xlsx")
-
 ```
+```{r, echo = F, warning = F, message = F}
+# clean dataset 
+# remove irrelevant variables
+df_clean <- df %>% 
+  select(-c(coder, event_desc, cowcode, source_title, arbitration, notes, decision))
+```
+
+```{r, echo = F, warning = F, message = F}
+# separate out date into 3 columns
+df_clean$date <- as.Date(df_clean$date)
+df_clean <- df_clean %>% 
+  mutate(year = as.double(format(date, format = "%Y")),
+                 month = as.double(format(date, format = "%m")),
+                 day = as.double(format(date, format = "%d"))) %>% 
+  select(-date)
+```
+
+```{r, echo = F, warning = F, message = F}
+# turn variables incorrectly cast as doubles into factors 
+df_clean$geo_scope <- ordered(df_clean$geo_scope, levels = c(0, 1, 2, 3, 4), 
+                              labels = c("local", "regional", "national", 
+                                         "international regional", "global"))
+
+df_clean$actor_id <- as.factor(df_clean$actor_id)
+levels(df_clean$actor_id) <- c("state", "non-state", "international", "nonaligned", "local state")
+
+df_clean$verb_10 <- ordered(df_clean$verb_10, levels = 1:21, 
+                              labels = c("pub state", "appeal", "exp coop",
+                                         "consult", "pol coop", "mat coop",
+                                         "prov aid", "yield", "investigate",
+                                         "demand", "disapprove", "reject",
+                                         "threaten", "protest", "force post", 
+                                         "reduce rel", "coerce", "repress", 
+                                         "vio combat", "unc mass vio", "defect"
+                                         ))
+
+## verb_100 and verb_1000 need to be altered
+
+df_clean$camp_goals <- as.factor(df_clean$camp_goals)
+levels(df_clean$camp_goals) <- c("Regime Change", "Institutional Reform", "Policy Change", 
+                                 "Territorial Secession", "Autonomy", "Anti-occupation", "Unknown")
+
+df_clean$tactical_choice <- as.factor(df_clean$tactical_choice)
+levels(df_clean$tactical_choice) <- c("violent", "nonviolent", "mixed")
+
+df_clean$nv_categ <- as.factor(df_clean$nv_categ)
+levels(df_clean$nv_categ) <- c("persuasion", "protest", "noncooperation",
+                               "intervention", "pol engage")
+
+# set 0s as NAs bc it is unclear what they correspond to from the data dictionary (only 32)
+df_clean$nc_type[df_clean$nc_type == 0] <- NA
+df_clean$nc_type <- as.factor(df_clean$nc_type)
+levels(df_clean$nc_type) <- c("social noncoop", "econ noncoop boy", 
+                              "econ noncoop strk", "pol noncoop")
+
+# set 0s as NAs bc it is unclear what they correspond to from the data dictionary (only 3)
+df_clean$nv_commission[df_clean$nv_commission == 3] <- NA
+df_clean$nv_commission <- as.factor(df_clean$nv_commission)
+levels(df_clean$nv_commission) <- c("omission", "commission", "ambiguous")
+
+# set 3s as NAs bc it is unclear what they correspond to from the data dictionary (only 2)
+df_clean$nv_concentration[df_clean$nv_concentration == 3] <- NA
+df_clean$nv_concentration <- as.factor(df_clean$nv_concentration)
+levels(df_clean$nv_concentration) <- c("phys dispersion", "phys concentration",
+                                       "mixed")
+
+df_clean$st_posture <- ordered(df_clean$st_posture, levels = 1:7, 
+                              labels = c("Full Accomodations", "Material Concessions",
+                                         "Nonmaterial Concessions", "Neutral",
+                                         "Nonmaterial Repression", "Material Repression",
+                                         "Intended Killings"))
+
+# assumed that non-defined level of 1 corresponds to moderate damange
+df_clean$damage <- ordered(df_clean$damage, levels = 0:3, 
+                              labels = c("minor", "moderate",
+                                         "significant", "substantial"))
+
+# recode 0s as 1s since 1 corresponds to "little or no impact" already
+df_clean$econ_impact[df_clean$econ_impact == 0] <- 1 
+df_clean$econ_impact <- ordered(df_clean$econ_impact, levels = 1:3, 
+                              labels = c("little", "significant",
+                                         "heavy"))
+```
+
+```{r, echo = F, warning = F, message = F}
+# turn variables incorrectly cast as characters into doubles
+# for ranges, take the average
+df_clean <- df_clean %>% 
+  separate(fatal_casu, into = c("fatal_low", "fatal_high"), sep = "-") %>%  # R will remove spaces when coercing
+  separate(injuries, into = c("inj_low", "inj_high"), sep = "-") %>% 
+  separate(num_partic_event, into = c("partic_low", "partic_high"), sep = "-") %>% 
+  mutate(fatal_casu = case_when(is.na(fatal_high) ~ as.double(fatal_low),
+                                TRUE ~ (as.double(fatal_low) + as.double(fatal_high)) / 2),
+         injuries = case_when(is.na(inj_high) ~ as.double(inj_low),
+                                TRUE ~ (as.double(inj_low) + as.double(inj_high)) / 2),
+         num_partic_event = case_when(is.na(partic_high) ~ as.double(partic_low),
+                                TRUE ~ (as.double(partic_low) + as.double(partic_high)) / 2)
+         ) %>% 
+  select(-c(fatal_low, fatal_high, inj_low, inj_high, partic_low, partic_high))
+```
+
+# Exploratory Data Analysis
+```{r, echo = F, warning = F, message = F, fig.width = 12}
+# EDA visualization for showing x = government response, y = number of participants, color = participant goals
+df_eda1 <- df_clean[, c("num_partic_event", "st_posture", "camp_goals")]
+df_eda1 <- df_eda1[complete.cases(df_eda1),]
+
+(p1 <- ggplot(data = df_eda1, aes(st_posture, num_partic_event)) +  
+  #facet_grid(.~CRIME_SEV) +
+  geom_jitter(aes(color = camp_goals),alpha = 0.4) +  
+  labs(x = "Government Response", y = "Number of Participants", 
+       title = "Figure 1",
+       #subtitle = "Suspected Crime Severity",
+       colour = "Participant Goals") +
+  theme_light() +
+  ylim(0, 2000000) + # omit one observation with high participant count
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))) 
+```
+
 
 
