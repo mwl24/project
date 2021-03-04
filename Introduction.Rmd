@@ -18,6 +18,21 @@ library(tidyverse)
 library(sjlabelled)
 ```
 
+# Introduction
+
+At the tail end of former President Trump’s term, the rise of social unrest within the United States became an undeniable reality of American life. The Black Lives Matter movement and the recent violent insurrection of pro-Trump supporters at the Capitol are just two of the campaigns by U.S. civilians of dissatisfaction with U.S. institutions and state actors. The events associated with these protests garnered international attention–– mostly solidarity for the BLM movement and condemnation for the Capitol Hill riot–– but the ugly truths surrounding social movements in other countries, especially autocratic nations where governmental abuses are most egregious, often fly under the radar. Given this, we are interested in investigating social unrest globally and developing a better understanding of the power that grassroots movements hold in challenging governments. It is imperative to recognize that civil resistance is also far from monolithic; oftentimes, the seeds of the most visible campaigns are sown in the form of smaller movements. For example, while media and academia have recognized the political potency of the 18-day occupation of Tahrir Square in 2011 that led to the removal of Egyptian President Hosni Mubarak, there has been scant attention given to the efficacy of the concurrent wave of labor strikes and road-blocking demonstrations in the country at large. Literature on labor strikes and other acts of omission is particularly thin, as this form of protest is less visible than many of its counterparts [1]. As alluded to previously, the extent to which 'quieter' protests are understood in authoriarian regimes is particularly abysmal. Existing studies showing the success of small, tactical movements at acheiving political aims are limited to single-country analyses and only examine first-world countries [2]. The primary goals for this study are as follows:
+  \begin{itemize}
+   \item How does radicalness of a campaign's goal affect the level of violence used against participants? 
+   \item What are the cumulative effects of repeated instances of social resistance against a given political target?
+   \item Is resistance through the use of economic pressure an effective means of generating political change?
+   \end{itemize} 
+   
+# Data
+
+This paper uses the NAVCO 3.0 dataset assembled as part of the Nonviolent and Violent Campaigns and Outcomes (NAVCO) data project, the first and only project to collect systematic, global data on both violent insurgencies and nonviolent civil resistance campaigns [3]. This was done by manually coding variables of interest for events according to news reports. Coders used news wire reports from Agence France Presse (AFP), the world's oldest and a leading international news agency, to access relevant articles. After binning the articles according to country and time period of interest, coders followed a rigorous set of instructions specified by Chenoweth, Pinckney, and Lewis to identify relevant events and appropriately translate text in articles to values usable for data analysis.
+
+There are two reasonable choices for response variables: (i) the regime response to campaign activity (ii) the number of fatalities or injuries caused due to campaign activity. This paper will primarily focus on the former response variable, as the number of casualties is intrinsically tied to the number of participants involved in the campaign and is only tangentially related to efficacy. The predictor variables fall into seven main categories: location, date, perpetrator characteristics, perpetrator goals, perpetrator methods, target characteristics, and economic impact. We will focus heavily on the subset of predictors related to the methods that perpetrators utilize. Existing literature suggests that tactical innovation and the use of variant methods is critical for the success of civil resistance [4]. However, it is unclear which innovations are effective, warranting an analysis of the comparative utility of different forms of protest. For the cumulative effects research goal, we created a variable to track the number and magnitude of events in the three months prior to a major concession. The designation of a three month time frame was chosen based on the notion that social resistance movements rarely generate continued attention beyond several months following their conclusions.
+
 ```{r, echo = F, warning = F, message = F}
 df <- read_excel("data/navco3-0full.xlsx")
 ```
@@ -123,23 +138,30 @@ df_clean <- df_clean %>%
 ```
 
 # Exploratory Data Analysis
-```{r, echo = F, warning = F, message = F, fig.width = 12}
+```{r, echo = F, warning = F, message = F, fig.width = 13}
 # EDA visualization for showing x = government response, y = number of participants, color = participant goals
 df_eda1 <- df_clean[, c("num_partic_event", "st_posture", "camp_goals")]
 df_eda1 <- df_eda1[complete.cases(df_eda1),]
 
 (p1 <- ggplot(data = df_eda1, aes(st_posture, num_partic_event)) +  
   #facet_grid(.~CRIME_SEV) +
-  geom_jitter(aes(color = camp_goals),alpha = 0.4) +  
+  geom_jitter(aes(color = camp_goals),alpha = 0.5) +  
   labs(x = "Government Response", y = "Number of Participants", 
-       title = "Figure 1",
-       #subtitle = "Suspected Crime Severity",
+       title = "Figure 1: Regime Change Associated with More Forceful Regime Responses",
        colour = "Participant Goals") +
   theme_light() +
   ylim(0, 2000000) + # omit one observation with high participant count
   theme(plot.title = element_text(hjust = 0.5),
         plot.subtitle = element_text(hjust = 0.5))) 
 ```
+There are several notable insights from this figure. Regime responses of the highest severity, in which the regime resorts to repression with the intent of killing participants, appear to be triggered be triggered by campaigns in which participants are requesting regime change. This trend seems highly plausible: direct challenges against autocratic regimes would be likely to cause governments to lash out expeditiously and forcefully. Figure 1 also seems to offer some evidence for the idea that large campaigns with greater than 50,000 participants tend to elicit neutral regime responses.
 
+# References
 
+[1] Chenoweth E, Pinckney J, Lewis O. "Days of rage: Introducing the NAVCO 3.0 dataset." SAGE. Journal of Peace Research. 55 (4): 524-534.
 
+[2] Huet-Vaughn e. "Quiet Riot: Estimating a Causal Effect of Protest Violence." Working Paper. 1-41.
+
+[3] Chenowth E.
+
+[4] McAdam D. "Tactical Innovation and the Pace of Insurgency." American Sociological Association. American Sociological Review. 48 (6): 735-754.
