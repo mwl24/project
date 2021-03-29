@@ -1,5 +1,5 @@
 ---
-title: "Introduction"
+title: "SAP & Methods"
 author: "Michael Li"
 date: "March 1, 2021"
 output:
@@ -22,9 +22,9 @@ library(sjlabelled)
 
 At the tail end of former President Trump’s term, the rise of social unrest within the United States became an undeniable reality of American life. The Black Lives Matter movement and the recent violent insurrection of pro-Trump supporters at the Capitol are just two of the campaigns by U.S. civilians of dissatisfaction with U.S. institutions and state actors. The events associated with these protests garnered international attention–– mostly solidarity for the BLM movement and condemnation for the Capitol Hill riot–– but the ugly truths surrounding social movements in other countries, especially autocratic nations where governmental abuses are most egregious, often fly under the radar. Given this, we are interested in investigating social unrest globally and developing a better understanding of the power that grassroots movements hold in challenging governments. It is imperative to recognize that civil resistance is also far from monolithic; oftentimes, the seeds of the most visible campaigns are sown in the form of smaller movements. For example, while media and academia have recognized the political potency of the 18-day occupation of Tahrir Square in 2011 that led to the removal of Egyptian President Hosni Mubarak, there has been scant attention given to the efficacy of the concurrent wave of labor strikes and road-blocking demonstrations in the country at large. Literature on labor strikes and other acts of omission is particularly thin, as this form of protest is less visible than many of its counterparts [1]. As alluded to previously, the extent to which 'quieter' protests are understood in authoriarian regimes is particularly abysmal. Existing studies showing the success of small, tactical movements at acheiving political aims are limited to single-country analyses and only examine first-world countries [2]. The primary goals for this study are as follows:
   \begin{itemize}
-   \item How does radicalness of a campaign's goal affect the level of violence used against participants? 
+   \item What are the most important determinants of a successful protest?
    \item What are the cumulative effects of repeated instances of social resistance against a given political target?
-   \item Is resistance through the use of economic pressure an effective means of generating political change?
+   \item Does the use of violence by a government lead to a 'chilling effect', whereby future protests are deterred?
    \end{itemize} 
    
 # Data
@@ -157,12 +157,65 @@ df_eda1 <- df_eda1[complete.cases(df_eda1),]
 ```
 There are several notable insights from this figure. Regime responses of the highest severity, in which the regime resorts to repression with the intent of killing participants, appear to be triggered be triggered by campaigns in which participants are requesting regime change. This trend seems highly plausible: direct challenges against autocratic regimes would be likely to cause governments to lash out expeditiously and forcefully. Figure 1 also seems to offer some evidence for the idea that large campaigns with greater than 50,000 participants tend to elicit neutral regime responses.
 
+# Methodology
+
+## Determinants of Protest Success
+
+To model the factors that influence protest success the most, we opted for an ordinal logistic regression model, otherwise known as a cumulative logit model for ordinal responses. Protest success will be simply defined as the response used by the government, with full accomodation denoting the highest level of success and material and/or physical repression resulting in death denoting the lowest. The response variable has seven levels in total. Since we are examining a classification problem with ordered classes, it would not be appropriate to use a multinomial logistic regression model nor other similar models for nominal variables. Other classes of models, including the ordered probit model, are also commonly implemented for classification problems involving an ordinal response variable. In contrast to the ordered probit model, logistic regression affords greater interpretability; the coefficients $\beta$ in logistic regression allow for natural interpretations in terms of log odds. Hence, the logit link function is preferrable since the stated goals focus more on the interpretability of the predictors' relationships with the response. A cumulative logit model for an ordinal response with $J$ levels is similar to a binary logistic model, as the levels 1 to $j$ form a single category and the levels $j+1$ to J form a second category. The log-odds of falling at or below the category comprised of levels 1 to $j$ has a linear relationship with the predictors. The logits of the cumulative probabilities are therefore given by the following form:
+
+$$ logit(P(Y \leq j)) = \frac{P(Y \leq j)}{P(Y > j)} = \alpha_j + \beta x, \ for \ j = 1, \ 2 \ ... \ J-1 $$
+
+The key assumption underpinning the ordinal logistic regression model is the proportional odds assumption, which implies that only a single set of coefficients is necessary for each covariate in the model. This is because the assumption states that the coefficients that describe the relationship between the lowest ordinal category versus all higher categories are the same as those that describe the relationship between the next lowest category and all higher categories, and so on. To determine how well each predictor upholds the proportional odds assumption, we created a function to calculate the log odds that governmental response was greater or equal to a given level of governmental response from individual logistic regressions with a single predictor. We then tested the equality of coefficients for a given predictor across its corresponding binary logistic regression models. The differences between the logits for each partition of the dependent variable should be similar for a given predictor regardless of that predictor's level if the proportional odds assumption holds. A visualization indicating the validity of the proportional odds assumption for our predictor set has been included in the appendix.
+
+The base model containing relevant protest-level predictors is specified below:
+
+$$
+\begin{aligned}
+logit(P(Government \ Response \leq j)) &= \beta_{0j} + \beta_1 I(Scope_i = local) \\
+&+ \beta_2 I(Scope_i = subnational) + \beta_3 I(Scope_i = national) \\
+&+ \beta_4 I(Scope_i = international \ regional) + \beta_5 I(Scope_i = global) \\
+&+ \beta_6 I(ActorType_i = state) + \beta_7 I(ActorType_i = non-state) \\
+&+ \beta_8 I(ActorType_i = international) + \beta_9 I(ActorType_i = non-aligned) \\
+&+ \beta_{10} I(ActorType_i = local \ state \ actor) + \beta_{11} I(Goals_i = regime \ change) \\
+&+ \beta_{12} I(Goals_i = institutional \ reform) + \beta_{13} I(Goals_i = policy \ change) \\
+&+ \beta_{14} I(Goals_i = territorial \ secession) + \beta_{15} I(Goals_i = greater \ autonomy) \\
+&+ \beta_{16} I(Goals_i = anti-occupation) + \beta_{17} I(Tactic_i = violent) \\
+&+ \beta_{18} I(Tactic_i = non-violent) +\beta_{19} I(Tactic_i = mixed) \\
+&+ \beta{20} NumPartcipants + \beta_{21}Damage + \beta{22}EconImpact \\
+& for \ j = 1, \ 2, \ 3, \ 4, \ 5, \ 6, \ 7
+\end{aligned}
+$$
+
+## Cumulative Protest Effects 
+
+Protests do not occur in a vacuum; oftentimes, individual protests are part of a much larger campaign designed to bring about sweeping institutional change. Given this, we posit that there is likely to be a cumulative effect of protests on governmental response, whereby past protests influence the success of future ones within the same campaign. We will follow the inclusion rule used by Pinckney that approximates the definition of a campaign within the civil resistance literature. A campaign must consist of at least three distinct physical events separated by less than one year, with the events meaningfully linked through common actors or goals [5]. To categorize event-level data into campaigns, we will use the NAVCO 1.3 list of maximalist campaigns. Since NAVCO 3.0 is a disaggregated dataset that does not sort individual protests into campaigns, we will analyze the stated protest goals, target, actors, and timing of the events in our dataset and assign them to the campaigns to which they are most closely aligned. Protests that do not clearly seem to be part of any campaign will be discarded. 
+
+Once the data has been sorted into campaigns, we will use a weighted cumulative exposure (WCE) model. The WCE model has wide applications within the field of pharmacoepidemiology. In this case, the WCE model is advantageous for three reasons. First, it is able to capture the cumulative effect of past protests on governmental response. Second, it is able to weight the relative importance of past protests depending on their timing. Finally, information concerning the severity of an event can be integrated. We chose this model over recurrent event models such as the Anderson-Gill (AG) model, which suffer from the independence assumption. The AG model assumes that the instantaneous risk of experiencing an outcome of interest at time $t$ remains the same irrespective of whether or not previous events have been experienced. This makes recurrent event independence a poor assumption for this problem. The WCE model is specified as follows:
+
+$$
+WCE(u) = \sum_{t \leq u} w(u-t)X(t)
+$$
+Here $u$ is the current time when governmental response is evaluated, $t \leq u$ indexes times of protests preceding $u$, and $X(t)$ represents the past protest intensity at time $t$. Here intensity will be defined as the number of participants in the protest, as this is a reasonably valid way to measure the strength of a protest.Given that our ultimate reponse variable of interest is quantitative, we will follow the Danieli et al. procedure for implementing the WCE model to assess longitudinal changes in the outcome [6]. This WCE model will be incorporated into a linear effects mixed model, whereby we model governmental response Y, a repeated-over-time outcome, at the $k^{th}$ protest for campaign $i$. The model will thus take the form below:
+
+$$
+Y_i(t_{ik}) = \beta_0 + b_{i,0} + \beta_{WCE}WCE_i(t_{ik}) + \sum_{s = 1}^{p}(\beta_sZ_{s,ik}) + \sum_{s = 1}^{r}(b_{i,s}L_{s,ik}) + \epsilon_{ik}
+$$
+$\beta_0$ represents the expected value of the governmental response to a campaign at time $t_{ik}$ assuming that there were no prior protests in the campaign. This is the response that would be expected given that the values of all $p$ fixed effect covariates were set to zero. $b_{i,0} ~ \mathcal{N}(0, \sigma_b^2)$ represents the random intercept for campaign $i$. The fixed effect, $\beta_{WCE}$, represents the expected change in governmental response associated with a unit increase in the WCE metric. $\beta_s$ represents the fixed effect of the covariates $Z_s$, while $b_{i,s}$ represents the random effect of a set of covariates $L_s$ that are included in $Z_s$. These covariates $L_s$ will be the grouping factors that we are seeking to control, namely the geographic scope of protests and the type of actor involved in the protest. We chose to use a mixed effects model because there is reason to believe that observations are not necessarily independent of one another. Protests are likely to 'interact' with one another. For example, an actor conducting multiple protests would be expected to be met with similar governmental responses for each protest. This model allows us to therefore capture variance in the dependent governmental response variable due to relevant clusters.
+
+## Chilling Effect
+
+To determine whether or not a chilling effect stemming from severe governmental responses exists, we will be examining the frequency of protests a year prior to and following such a response. A severe response will be defined as any governmental response that is of level five, which corresponds to non-material and non-physical repression, or higher. A two proportions Z-test will be used to examine if the difference in protest frequencies is statistically significant. This hypothesis test is effective in comparing population proportion differences between two groups, and it is chosen over the Fisher-exact test because of the sufficiently large sample size. 
+
 # References
 
 [1] Chenoweth E, Pinckney J, Lewis O. "Days of rage: Introducing the NAVCO 3.0 dataset." SAGE. Journal of Peace Research. 55 (4): 524-534.
 
-[2] Huet-Vaughn e. "Quiet Riot: Estimating a Causal Effect of Protest Violence." Working Paper. 1-41.
+[2] Huet-Vaughn E. "Quiet Riot: Estimating a Causal Effect of Protest Violence." Working Paper. 1-41.
 
 [3] Chenowth E.
 
 [4] McAdam D. "Tactical Innovation and the Pace of Insurgency." American Sociological Association. American Sociological Review. 48 (6): 735-754.
+
+[5]
+
+[6] Danieli C, Sheppard T, Costello R, Dixon W, Abrahamowicz M. "Modeling of cumulative effects of time-varying drug exposures on within-subject changes in a continuous outcome." SSMR. 29(9): 2554-2568.
