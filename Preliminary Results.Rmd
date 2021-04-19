@@ -1,0 +1,459 @@
+---
+title: "Preliminary Results"
+author: "Michael Li"
+date: "March 1, 2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo = F, warning = F, message = F}
+library(readxl)
+library(ggplot2)
+library(tidyverse)
+library(sjlabelled)
+library(splus2R)
+library(WCE)
+library(survival)
+library(eha)
+library(survminer)
+```
+
+# Introduction
+
+At the tail end of former President Trump’s term, the rise of social unrest within the United States became an undeniable reality of American life. The Black Lives Matter movement and the recent violent insurrection of pro-Trump supporters at the Capitol are just two of the campaigns by U.S. civilians of dissatisfaction with U.S. institutions and state actors. The events associated with these protests garnered international attention–– mostly solidarity for the BLM movement and condemnation for the Capitol Hill riot–– but the ugly truths surrounding social movements in other countries, especially autocratic nations where governmental abuses are most egregious, often fly under the radar. Given this, we are interested in investigating social unrest globally and developing a better understanding of the power that grassroots movements hold in challenging governments. It is imperative to recognize that civil resistance is also far from monolithic; oftentimes, the seeds of the most visible campaigns are sown in the form of smaller movements. For example, while media and academia have recognized the political potency of the 18-day occupation of Tahrir Square in 2011 that led to the removal of Egyptian President Hosni Mubarak, there has been scant attention given to the efficacy of the concurrent wave of labor strikes and road-blocking demonstrations in the country at large. Literature on labor strikes and other acts of omission is particularly thin, as this form of protest is less visible than many of its counterparts [1]. As alluded to previously, the extent to which 'quieter' protests are understood in authoriarian regimes is particularly abysmal. Existing studies showing the success of small, tactical movements at acheiving political aims are limited to single-country analyses and only examine first-world countries [2]. The primary goals for this study are as follows:
+  \begin{itemize}
+   \item What are the most important determinants of a successful protest?
+   \item What are the cumulative effects of repeated instances of social resistance against a given political target?
+   \item Does the use of violence by a government lead to a 'chilling effect', whereby future protests are deterred?
+   \end{itemize} 
+   
+# Data
+
+This paper uses the NAVCO 3.0 dataset assembled as part of the Nonviolent and Violent Campaigns and Outcomes (NAVCO) data project, the first and only project to collect systematic, global data on both violent insurgencies and nonviolent civil resistance campaigns [3]. This was done by manually coding variables of interest for events according to news reports. Coders used news wire reports from Agence France Presse (AFP), the world's oldest and a leading international news agency, to access relevant articles. After binning the articles according to country and time period of interest, coders followed a rigorous set of instructions specified by Chenoweth, Pinckney, and Lewis to identify relevant events and appropriately translate text in articles to values usable for data analysis.
+
+There are two reasonable choices for response variables: (i) the regime response to campaign activity (ii) the number of fatalities or injuries caused due to campaign activity. This paper will primarily focus on the former response variable, as the number of casualties is intrinsically tied to the number of participants involved in the campaign and is only tangentially related to efficacy. The predictor variables fall into seven main categories: location, date, perpetrator characteristics, perpetrator goals, perpetrator methods, target characteristics, and economic impact. We will focus heavily on the subset of predictors related to the methods that perpetrators utilize. Existing literature suggests that tactical innovation and the use of variant methods is critical for the success of civil resistance [4]. However, it is unclear which innovations are effective, warranting an analysis of the comparative utility of different forms of protest. For the cumulative effects research goal, we created a variable to track the number and magnitude of events in the three months prior to a major concession. The designation of a three month time frame was chosen based on the notion that social resistance movements rarely generate continued attention beyond several months following their conclusions.
+
+```{r, echo = F, warning = F, message = F}
+df <- read_excel("data/navco3-0full.xlsx")
+```
+
+```{r, echo = F, warning = F, message = F}
+# clean dataset 
+# remove irrelevant variables
+df_clean <- df %>% 
+  select(-c(coder, event_desc, cowcode, source_title, arbitration, notes, decision))
+```
+
+```{r, echo = F, warning = F, message = F}
+# separate out date into 3 columns
+df_clean$date <- as.Date(df_clean$date)
+df_clean <- df_clean %>% 
+  mutate(year = as.double(format(date, format = "%Y")),
+                 month = as.double(format(date, format = "%m")),
+                 day = as.double(format(date, format = "%d")))
+```
+
+```{r, echo = F, warning = F, message = F}
+# turn variables incorrectly cast as doubles into factors 
+df_clean$geo_scope <- ordered(df_clean$geo_scope, levels = c(0, 1, 2, 3, 4), 
+                              labels = c("local", "regional", "national", 
+                                         "international regional", "global"))
+
+df_clean$actor_id <- as.factor(df_clean$actor_id)
+levels(df_clean$actor_id) <- c("state", "non-state", "international", "nonaligned", "local state")
+
+df_clean$verb_10 <- ordered(df_clean$verb_10, levels = 1:21, 
+                              labels = c("pub state", "appeal", "exp coop",
+                                         "consult", "pol coop", "mat coop",
+                                         "prov aid", "yield", "investigate",
+                                         "demand", "disapprove", "reject",
+                                         "threaten", "protest", "force post", 
+                                         "reduce rel", "coerce", "repress", 
+                                         "vio combat", "unc mass vio", "defect"
+                                         ))
+
+## verb_100 and verb_1000 need to be altered
+
+df_clean$camp_goals <- as.factor(df_clean$camp_goals)
+levels(df_clean$camp_goals) <- c("Regime Change", "Institutional Reform", "Policy Change", 
+                                 "Territorial Secession", "Autonomy", "Anti-occupation", "Unknown")
+
+df_clean$tactical_choice <- as.factor(df_clean$tactical_choice)
+levels(df_clean$tactical_choice) <- c("violent", "nonviolent", "mixed")
+
+df_clean$nv_categ <- as.factor(df_clean$nv_categ)
+levels(df_clean$nv_categ) <- c("persuasion", "protest", "noncooperation",
+                               "intervention", "pol engage")
+
+# set 0s as NAs bc it is unclear what they correspond to from the data dictionary (only 32)
+df_clean$nc_type[df_clean$nc_type == 0] <- NA
+df_clean$nc_type <- as.factor(df_clean$nc_type)
+levels(df_clean$nc_type) <- c("social noncoop", "econ noncoop boy", 
+                              "econ noncoop strk", "pol noncoop")
+
+# set 0s as NAs bc it is unclear what they correspond to from the data dictionary (only 3)
+df_clean$nv_commission[df_clean$nv_commission == 3] <- NA
+df_clean$nv_commission <- as.factor(df_clean$nv_commission)
+levels(df_clean$nv_commission) <- c("omission", "commission", "ambiguous")
+
+# set 3s as NAs bc it is unclear what they correspond to from the data dictionary (only 2)
+df_clean$nv_concentration[df_clean$nv_concentration == 3] <- NA
+df_clean$nv_concentration <- as.factor(df_clean$nv_concentration)
+levels(df_clean$nv_concentration) <- c("phys dispersion", "phys concentration",
+                                       "mixed")
+
+df_clean$st_posture <- ordered(df_clean$st_posture, levels = 1:7, 
+                              labels = c("Full Accomodations", "Material Concessions",
+                                         "Nonmaterial Concessions", "Neutral",
+                                         "Nonmaterial Repression", "Material Repression",
+                                         "Intended Killings"))
+
+# assumed that non-defined level of 1 corresponds to moderate damange
+df_clean$damage <- ordered(df_clean$damage, levels = 0:3, 
+                              labels = c("minor", "moderate",
+                                         "significant", "substantial"))
+
+# recode 0s as 1s since 1 corresponds to "little or no impact" already
+df_clean$econ_impact[df_clean$econ_impact == 0] <- 1 
+df_clean$econ_impact <- ordered(df_clean$econ_impact, levels = 1:3, 
+                              labels = c("little", "significant",
+                                         "heavy"))
+```
+
+```{r, echo = F, warning = F, message = F}
+# turn variables incorrectly cast as characters into doubles
+# for ranges, take the average
+df_clean <- df_clean %>% 
+  separate(fatal_casu, into = c("fatal_low", "fatal_high"), sep = "-") %>%  # R will remove spaces when coercing
+  separate(injuries, into = c("inj_low", "inj_high"), sep = "-") %>% 
+  separate(num_partic_event, into = c("partic_low", "partic_high"), sep = "-") %>% 
+  mutate(fatal_casu = case_when(is.na(fatal_high) ~ as.double(fatal_low),
+                                TRUE ~ (as.double(fatal_low) + as.double(fatal_high)) / 2),
+         injuries = case_when(is.na(inj_high) ~ as.double(inj_low),
+                                TRUE ~ (as.double(inj_low) + as.double(inj_high)) / 2),
+         num_partic_event = case_when(is.na(partic_high) ~ as.double(partic_low),
+                                TRUE ~ (as.double(partic_low) + as.double(partic_high)) / 2)
+         ) %>% 
+  select(-c(fatal_low, fatal_high, inj_low, inj_high, partic_low, partic_high))
+```
+
+# Exploratory Data Analysis
+```{r, echo = F, warning = F, message = F, fig.width = 13}
+# EDA visualization for showing x = government response, y = number of participants, color = participant goals
+df_eda1 <- df_clean[, c("num_partic_event", "st_posture", "camp_goals")]
+df_eda1 <- df_eda1[complete.cases(df_eda1),]
+
+(p1 <- ggplot(data = df_eda1, aes(st_posture, num_partic_event)) +  
+  #facet_grid(.~CRIME_SEV) +
+  geom_jitter(aes(color = camp_goals),alpha = 0.5) +  
+  labs(x = "Government Response", y = "Number of Participants", 
+       title = "Figure 1: Regime Change Associated with More Forceful Regime Responses",
+       colour = "Participant Goals") +
+  theme_light() +
+  ylim(0, 2000000) + # omit one observation with high participant count
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))) 
+```
+There are several notable insights from this figure. Regime responses of the highest severity, in which the regime resorts to repression with the intent of killing participants, appear to be triggered be triggered by campaigns in which participants are requesting regime change. This trend seems highly plausible: direct challenges against autocratic regimes would be likely to cause governments to lash out expeditiously and forcefully. Figure 1 also seems to offer some evidence for the idea that large campaigns with greater than 50,000 participants tend to elicit neutral regime responses.
+
+# Methodology
+
+## Determinants of Protest Success
+
+To model the factors that influence protest success the most, we opted for an ordinal logistic regression model, otherwise known as a cumulative logit model for ordinal responses. Protest success will be simply defined as the response used by the government, with full accomodation denoting the highest level of success and material and/or physical repression resulting in death denoting the lowest. The response variable has seven levels in total. Since we are examining a classification problem with ordered classes, it would not be appropriate to use a multinomial logistic regression model nor other similar models for nominal variables. Other classes of models, including the ordered probit model, are also commonly implemented for classification problems involving an ordinal response variable. In contrast to the ordered probit model, logistic regression affords greater interpretability; the coefficients $\beta$ in logistic regression allow for natural interpretations in terms of log odds. Hence, the logit link function is preferrable since the stated goals focus more on the interpretability of the predictors' relationships with the response. A cumulative logit model for an ordinal response with $J$ levels is similar to a binary logistic model, as the levels 1 to $j$ form a single category and the levels $j+1$ to J form a second category. The log-odds of falling at or below the category comprised of levels 1 to $j$ has a linear relationship with the predictors. The logits of the cumulative probabilities are therefore given by the following form:
+
+$$ logit(P(Y \leq j)) = \frac{P(Y \leq j)}{P(Y > j)} = \alpha_j + \beta x, \ for \ j = 1, \ 2 \ ... \ J-1 $$
+
+The key assumption underpinning the ordinal logistic regression model is the proportional odds assumption, which implies that only a single set of coefficients is necessary for each covariate in the model. This is because the assumption states that the coefficients that describe the relationship between the lowest ordinal category versus all higher categories are the same as those that describe the relationship between the next lowest category and all higher categories, and so on. To determine how well each predictor upholds the proportional odds assumption, we created a function to calculate the log odds that governmental response was greater or equal to a given level of governmental response from individual logistic regressions with a single predictor. We then tested the equality of coefficients for a given predictor across its corresponding binary logistic regression models. The differences between the logits for each partition of the dependent variable should be similar for a given predictor regardless of that predictor's level if the proportional odds assumption holds. A visualization indicating the validity of the proportional odds assumption for our predictor set has been included in the appendix.
+
+The base model containing relevant protest-level predictors is specified below:
+
+$$
+\begin{aligned}
+logit(P(Government \ Response \leq j)) &= \beta_{0j} + \beta_1 I(Scope_i = local) \\
+&+ \beta_2 I(Scope_i = subnational) + \beta_3 I(Scope_i = national) \\
+&+ \beta_4 I(Scope_i = international \ regional) + \beta_5 I(Scope_i = global) \\
+&+ \beta_6 I(ActorType_i = state) + \beta_7 I(ActorType_i = non-state) \\
+&+ \beta_8 I(ActorType_i = international) + \beta_9 I(ActorType_i = non-aligned) \\
+&+ \beta_{10} I(ActorType_i = local \ state \ actor) + \beta_{11} I(Goals_i = regime \ change) \\
+&+ \beta_{12} I(Goals_i = institutional \ reform) + \beta_{13} I(Goals_i = policy \ change) \\
+&+ \beta_{14} I(Goals_i = territorial \ secession) + \beta_{15} I(Goals_i = greater \ autonomy) \\
+&+ \beta_{16} I(Goals_i = anti-occupation) + \beta_{17} I(Tactic_i = violent) \\
+&+ \beta_{18} I(Tactic_i = non-violent) +\beta_{19} I(Tactic_i = mixed) \\
+&+ \beta{20} NumPartcipants + \beta_{21}Damage + \beta{22}EconImpact \\
+& for \ j = 1, \ 2, \ 3, \ 4, \ 5, \ 6, \ 7
+\end{aligned}
+$$
+
+## Cumulative Protest Effects 
+
+Protests do not occur in a vacuum; oftentimes, individual protests are part of a much larger campaign designed to bring about sweeping institutional change. Given this, we posit that there is likely to be a cumulative effect of protests on governmental response, whereby past protests influence the success of future ones within the same campaign. We will follow the inclusion rule used by Pinckney that approximates the definition of a campaign within the civil resistance literature. A campaign must consist of at least three distinct physical events separated by less than one year, with the events meaningfully linked through common actors or goals [5]. To categorize event-level data into campaigns, we will use the NAVCO 1.3 list of maximalist campaigns. Since NAVCO 3.0 is a disaggregated dataset that does not sort individual protests into campaigns, we will analyze the stated protest goals, target, actors, and timing of the events in our dataset and assign them to the campaigns to which they are most closely aligned. Protests that do not clearly seem to be part of any campaign will be discarded. 
+
+Once the data has been sorted into campaigns, we will use a weighted cumulative exposure (WCE) model. The WCE model has wide applications within the field of pharmacoepidemiology. In this case, the WCE model is advantageous for three reasons. First, it is able to capture the cumulative effect of past protests on governmental response. Second, it is able to weight the relative importance of past protests depending on their timing. Finally, information concerning the severity of an event can be integrated. We chose this model over recurrent event models such as the Anderson-Gill (AG) model, which suffer from the independence assumption. The AG model assumes that the instantaneous risk of experiencing an outcome of interest at time $t$ remains the same irrespective of whether or not previous events have been experienced. This makes recurrent event independence a poor assumption for this problem. The WCE model is specified as follows:
+
+$$
+WCE(u) = \sum_{t \leq u} w(u-t)X(t)
+$$
+Here $u$ is the current time when governmental response is evaluated, $t \leq u$ indexes times of protests preceding $u$, and $X(t)$ represents the past protest intensity at time $t$. Here intensity will be defined as the number of participants in the protest, as this is a reasonably valid way to measure the strength of a protest.Given that our ultimate reponse variable of interest is quantitative, we will follow the Danieli et al. procedure for implementing the WCE model to assess longitudinal changes in the outcome [6]. This WCE model will be incorporated into a linear effects mixed model, whereby we model governmental response Y, a repeated-over-time outcome, at the $k^{th}$ protest for campaign $i$. The model will thus take the form below:
+
+$$
+Y_i(t_{ik}) = \beta_0 + b_{i,0} + \beta_{WCE}WCE_i(t_{ik}) + \sum_{s = 1}^{p}(\beta_sZ_{s,ik}) + \sum_{s = 1}^{r}(b_{i,s}L_{s,ik}) + \epsilon_{ik}
+$$
+$\beta_0$ represents the expected value of the governmental response to a campaign at time $t_{ik}$ assuming that there were no prior protests in the campaign. This is the response that would be expected given that the values of all $p$ fixed effect covariates were set to zero. $b_{i,0} ~ \mathcal{N}(0, \sigma_b^2)$ represents the random intercept for campaign $i$. The fixed effect, $\beta_{WCE}$, represents the expected change in governmental response associated with a unit increase in the WCE metric. $\beta_s$ represents the fixed effect of the covariates $Z_s$, while $b_{i,s}$ represents the random effect of a set of covariates $L_s$ that are included in $Z_s$. These covariates $L_s$ will be the grouping factors that we are seeking to control, namely the geographic scope of protests and the type of actor involved in the protest. We chose to use a mixed effects model because there is reason to believe that observations are not necessarily independent of one another. Protests are likely to 'interact' with one another. For example, an actor conducting multiple protests would be expected to be met with similar governmental responses for each protest. This model allows us to therefore capture variance in the dependent governmental response variable due to relevant clusters.
+
+## Chilling Effect
+
+To determine whether or not a chilling effect stemming from severe governmental responses exists, we will be examining the frequency of protests a year prior to and following such a response. A severe response will be defined as any governmental response that is of level five, which corresponds to non-material and non-physical repression, or higher. A two proportions Z-test will be used to examine if the difference in protest frequencies is statistically significant. This hypothesis test is effective in comparing population proportion differences between two groups, and it is chosen over the Fisher-exact test because of the sufficiently large sample size. 
+
+# Results 
+
+```{r}
+# read in NAVCO 1.3 dataset to categorize campaigns
+campaigns <- read_excel("data/NAVCO v2.0.xlsx")
+# filter for campaign years that occurred after 1990
+campaign_names <- campaigns %>% group_by(campaign, location) %>% 
+  filter(year >= 1990) %>% 
+  #mutate(start_year = min(year)) %>% 
+  #mutate(end_year = max(year)) %>% 
+  #slice(1) %>% 
+  select(campaign, location, year)
+
+campaign_names$id <- seq.int(nrow(campaign_names))
+
+campaign_classifier <- function(df, camps) {
+  campaign_df <- data.frame()
+  for(i in 1:nrow(camps)) {
+    df_temp <- df[df$country_name == ifelse(grepl(" ", camps$location[i], 
+                                                   fixed = TRUE),
+                                             gsub(" ", "_",
+                                                  lowerCase(camps$location[i])),
+                                             lowerCase(camps$location[i]))
+                  & df$year == camps$year[i],] %>% 
+      # filter for protests against governmental (state) actors
+      filter(target_3 %in% c("COP", "GOV", "JUD", "MIL", "LLY", "SPY", "LEG", "TOP"))
+     #filter(target_3 == "GOV")
+    df_temp <- df_temp %>% arrange(date) # arrange dates to ensure time differential can be measured
+             
+    df_temp$id <- i
+    df_temp <- df_temp %>%
+      mutate(diff_time = as.double(date - lag(date))) # get time difference b/w protests
+    df_temp$diff_time[is.na(df_temp$diff_time)] <- 0
+    df_temp$Stop <- cumsum(df_temp$diff_time)
+    df_temp$Stop[df_temp$Stop == 0] <- 1
+    # df_temp <- df_temp %>% 
+    #   mutate(Start = lag(Stop))
+    # df_temp$Start[is.na(df_temp$Start)] <- 0
+    campaign_df <- rbind(campaign_df, df_temp)
+  }
+  return(campaign_df)
+}
+```
+
+```{r}
+campaign_df <- campaign_classifier(df_clean, campaign_names)
+campaign_df <- campaign_df %>% filter(!is.na(tactical_choice) & !is.na(st_posture))
+
+# classify governmental responses into binary variable for concessions Y/N
+campaign_df <- campaign_df %>% 
+  mutate(concessions = if_else(st_posture == "Full Accomodations" | 
+                         st_posture == "Material Concessions" | 
+                         st_posture == "Nonmaterial Concessions", 1, 0 ))
+
+# consolidate same-day protests
+campaign_df <- campaign_df %>% 
+  group_by(id, date) %>% 
+  mutate(num_protests_day = n()) %>% 
+  ungroup()
+
+campaign_df <- campaign_df %>% 
+  group_by(id, date) %>% 
+  slice(which.min(st_posture)) %>% 
+  ungroup
+
+# reorder factors to account for increasing violence progression
+campaign_df <- campaign_df %>% 
+  mutate(tactics = case_when(as.integer(tactical_choice) == 1 ~ 3.0, # violent (1) --> 3
+                             as.integer(tactical_choice) == 2 ~ 1.0, # non-violent (2) --> 1
+                             TRUE ~ 2.0)) # mixed(3) --> 1
+
+# categorize last concession as outcome of interest, we want to know how successful the  final protest of the campaign was
+# #campaign_df[campaign_df$concessions == 1, c("country_name", "Start", "Stop", "st_posture",
+# #                                            "camp_goals", "localities")]
+# campaign_conc <- campaign_df %>%
+#   filter(concessions == 1) %>% 
+#   group_by(id) %>% 
+#   slice(n()) %>% 
+#   ungroup()
+# 
+# campaign_df <- rbind(campaign_df %>%
+#                        filter(concessions == 0), campaign_conc) %>% 
+#   arrange(id, date) %>% 
+#   group_by(id) %>% 
+#   mutate(last_concession = min(which(concessions == 1 | row_number() ==n()))) %>%
+#   filter(row_number() <= last_concession) %>% 
+#   select(-last_concession)
+```
+
+```{r}
+# match start dates to match events with complete information
+# campaign_df <- campaign_df %>% 
+#   filter(concessions == 1)
+campaign_df <- campaign_df %>% 
+  group_by(id) %>% 
+  mutate(Start = lag(Stop)) %>% 
+  ungroup()
+campaign_df$Start[is.na(campaign_df$Start)] <- 0
+
+# convert id to a double
+campaign_df$id <- as.double(campaign_df$id)
+
+# get number of protests
+campaign_df <- campaign_df %>% 
+  group_by(id) %>% 
+  mutate(enum = row_number()) %>% 
+  ungroup()
+
+```
+
+```{r}
+df_pwp <- df_clean %>% 
+  group_by(country_name, year) %>% 
+  filter(target_3 %in% c("COP", "GOV", "JUD", "MIL", "LLY", "SPY", "LEG", "TOP")) %>% 
+  ungroup()
+  
+df_pwp$id <- df_pwp %>% group_by(country_name, year) %>% 
+  group_indices() 
+
+df_pwp <- df_pwp %>%
+  ungroup() %>% 
+  arrange(id, date) %>% 
+  group_by(id) %>% 
+  mutate(diff_time = as.double(date - lag(date))) # get time difference b/w protests
+
+df_pwp$diff_time[is.na(df_pwp$diff_time)] <- 0
+df_pwp$Stop <- cumsum(df_pwp$diff_time)
+df_pwp$Stop[df_pwp$Stop == 0] <- 1
+
+df_pwp <- df_pwp %>% filter(!is.na(tactical_choice) & !is.na(st_posture))
+
+# classify governmental responses into binary variable for concessions Y/N
+df_pwp <- df_pwp %>% 
+  mutate(concessions = if_else(st_posture == "Full Accomodations" | 
+                         st_posture == "Material Concessions" | 
+                         st_posture == "Nonmaterial Concessions", 1, 0 ))
+
+# consolidate same-day protests
+df_pwp <- df_pwp %>% 
+  group_by(id, date) %>% 
+  mutate(num_protests_day = n()) %>% 
+  ungroup()
+
+df_pwp <- df_pwp %>% 
+  group_by(id, date) %>% 
+  slice(which.min(st_posture)) %>% 
+  ungroup
+
+# reorder factors to account for increasing violence progression
+df_pwp <- df_pwp %>% 
+  mutate(tactics = factor(case_when(as.integer(tactical_choice) == 1 ~ 3.0, # violent (1) --> 3
+                             as.integer(tactical_choice) == 2 ~ 1.0, # non-violent (2) --> 1
+                             TRUE ~ 2.0), order = TRUE, levels = c(1, 2, 3))) # mixed(3) --> 1
+
+# match start dates to match events with complete information
+df_pwp <- df_pwp %>% 
+  group_by(id) %>% 
+  mutate(Start = lag(Stop)) %>% 
+  ungroup()
+df_pwp$Start[is.na(df_pwp$Start)] <- 0
+
+# convert id to a double
+df_pwp$id <- as.double(df_pwp$id)
+
+# get number of protests
+df_pwp <- df_pwp %>% 
+  group_by(id) %>% 
+  filter(concessions == 1) %>% 
+  mutate(enum = row_number()) %>% 
+  mutate(enum = if_else(enum >= 8, 8, as.double(enum))) %>% 
+  ungroup()
+unique(df_pwp$enum)
+
+# continent variable
+df_pwp <- df_pwp %>% 
+  mutate(region = case_when(country_name %in% c("algeria", "egypt",
+                                                   "kenya", "libya", 
+                                                   "madagascar", "morocco",
+                                                "sierra_leone", "south_sudan",
+                                                "sudan", "tanzania", "tunisia") ~ "Africa",
+                               country_name %in% c("iraq", "jordan", "syria",
+                                                   "turkey", "yemen") ~ "Middle East",
+                               country_name %in% c("bahrain", "china", 
+                                                   "india", "pakistan",
+                                                   "south_korea", "uzbekistan") ~ "Asia",
+                               country_name %in% c("estonia", "ukraine") ~ "Europe",
+                               TRUE ~ "Americas")) # Mexico, U.S.
+
+
+pwp1 <- coxph(Surv(Stop, concessions) ~ cluster(id)+ strata(enum) + tactics * strata(enum) 
+              + region * strata(enum) + geo_scope * strata(enum) + 
+                as.factor(camp_goals) * strata(enum), 
+            data = df_pwp)
+summary(pwp1)
+ggcoxdiagnostics(pwp1, type = "deviance", linear.predictions = T) +
+  labs(title = "Deviance Residuals",
+         x = "Linear Predictions",
+         y = "Residuals") + 
+  xlim(c(-5,8))
+typeof(df_pwp$camp_goals)
+  
+```
+
+```{r}
+checkWCE(as.data.frame(campaign_df), id = "id", event = "concessions", start = "Start",
+         stop = "Stop", expos = "tactics")
+
+WCE(as.data.frame(campaign_df[1:100,]), analysis = "Cox", cutoff = 3, nknots = 1:3, id = "id", 
+    event = "concessions", 
+    start = "Start", stop = "Stop", expos = "tactics")
+as.data.frame(campaign_df)
+campaign_df %>% group_by(id) %>% 
+  mutate(count = row_number()) %>% 
+  slice(n()) %>% 
+  select(country_name, count)
+
+library(WCE)
+data(drugdata)
+unique(drugdata[,c("Event")])
+length(unique(data[,c("Event")]))!=2
+drugdata
+WCE(drugdata, analysis = "Cox", cutoff = 90, nknots = 1:1, id = "Id", 
+    event = "Event", 
+    start = "Start", stop = "Stop", expos = "dose")
+
+hold <- drugdata %>% group_by(Id) %>% 
+  summarise(count = n())
+hold
+data()
+misc
+campaign_df
+```
+
+
+# References
+
+[1] Chenoweth E, Pinckney J, Lewis O. "Days of rage: Introducing the NAVCO 3.0 dataset." SAGE. Journal of Peace Research. 55 (4): 524-534.
+
+[2] Huet-Vaughn E. "Quiet Riot: Estimating a Causal Effect of Protest Violence." Working Paper. 1-41.
+
+[3] Chenowth E.
+
+[4] McAdam D. "Tactical Innovation and the Pace of Insurgency." American Sociological Association. American Sociological Review. 48 (6): 735-754.
+
+[5]
+
+[6] Danieli C, Sheppard T, Costello R, Dixon W, Abrahamowicz M. "Modeling of cumulative effects of time-varying drug exposures on within-subject changes in a continuous outcome." SSMR. 29(9): 2554-2568.
