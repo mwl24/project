@@ -212,6 +212,25 @@ To determine whether or not a chilling effect stemming from severe governmental 
 
 # Results 
 
+## Protest Success
+
+```{r}
+df_clean
+library(MASS)
+m <- polr(st_posture ~ factor(geo_scope, order = F) + actor_id + camp_goals + tactical_choice,
+          data = df_clean, 
+          na.action = na.omit,
+          Hess = TRUE)
+mod_output_df <- as.data.frame(summary(m)$coefficients)
+mod_output_df$p_value <- pnorm(abs(mod_output_df[, "t value"]), lower.tail = FALSE) * 2
+mod_output_df[, c("Value", "p_value")]
+unique(df_clean$camp_goals)
+summary(m)
+```
+
+
+## Cumulative Protests
+
 ```{r}
 # read in NAVCO 1.3 dataset to categorize campaigns
 campaigns <- read_excel("data/NAVCO v2.0.xlsx")
@@ -364,6 +383,24 @@ df_pwp <- df_pwp %>%
                              as.integer(tactical_choice) == 2 ~ 1.0, # non-violent (2) --> 1
                              TRUE ~ 2.0), order = TRUE, levels = c(1, 2, 3))) # mixed(3) --> 1
 
+####???KDLFK
+
+df_pwp_conc <- df_pwp %>%
+  filter(concessions == 1) %>%
+  group_by(id) %>%
+  slice(n()) %>%
+  ungroup()
+df_pwp_conc
+
+df_pwp <- rbind(df_pwp %>%
+                       filter(concessions == 0), df_pwp_conc) %>%
+  arrange(id, date) %>%
+  group_by(id) %>%
+  mutate(last_concession = min(which(concessions == 1 | row_number() ==n()))) %>%
+  filter(row_number() <= last_concession) %>%
+  select(-last_concession)
+
+
 # match start dates to match events with complete information
 df_pwp <- df_pwp %>% 
   group_by(id) %>% 
@@ -377,7 +414,7 @@ df_pwp$id <- as.double(df_pwp$id)
 # get number of protests
 df_pwp <- df_pwp %>% 
   group_by(id) %>% 
-  filter(concessions == 1) %>% 
+  #filter(concessions == 1) %>% 
   mutate(enum = row_number()) %>% 
   mutate(enum = if_else(enum >= 8, 8, as.double(enum))) %>% 
   ungroup()
@@ -404,17 +441,55 @@ pwp1 <- coxph(Surv(Stop, concessions) ~ cluster(id)+ strata(enum) + tactics * st
                 as.factor(camp_goals) * strata(enum), 
             data = df_pwp)
 summary(pwp1)
+pwp1
 ggcoxdiagnostics(pwp1, type = "deviance", linear.predictions = T) +
   labs(title = "Deviance Residuals",
          x = "Linear Predictions",
          y = "Residuals") + 
   xlim(c(-3,3))
+
+ggcoxdiagnostics(pwp1, type = "deviance", linear.predictions = F) +
+  labs(title = "Deviance Residuals",
+         x = "Linear Predictions",
+         y = "Residuals")
 drugdata
 ```
+
 ```{r}
+df_pwp$tactics <- as.integer(df_pwp$tactics)
+
 checkWCE(as.data.frame(df_pwp), id = "id", event = "concessions", start = "Start",
          stop = "Stop", expos = "tactics")
-df_pwp[, c("id", "concessions", "Start", "Stop", "tactics")]
+
+
+dog <- WCE(as.data.frame(chicken), analysis = "Cox", cutoff = 250, nknots = 1:3, 
+    constrained = "R", aic = FALSE, MatchedSet = NULL,
+    id = "id", 
+    event = "concessions", 
+    start = "Start", stop = "Stop", expos = "tactics",
+    covariates = c("geo_scope"))
+summary(dog)
+dog
+plot(dog)
+nonusers <- rep(0, 250)
+users <- rep(3, 250)
+# for all models
+HR.WCE(dog, users, nonusers, allres = TRUE)
+chicken$geo_scope <- as.integer(chicken$geo_scope)
+
+chicken <- df_pwp %>% group_by(id) %>% 
+  mutate(Stop = row_number()) %>% 
+  mutate(Start = Stop - 1)
+df_pwp
+as.data.frame(df_pwp[, c("id", "concessions", "Start", "Stop", "tactics", "geo_scope")])
+drugdata %>% 
+  group_by(Id) %>% 
+  mutate(count = row_number()) %>% 
+  slice_tail()
+length(df_pwp$tactics)
+coef.WCE(dog)
+sum(is.na(df_pwp$tactics))
+campaign_df[, c("id", "concessions", "Start", "Stop", "tactics")]
 ```
 
 ```{r}
