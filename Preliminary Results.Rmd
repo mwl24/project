@@ -234,8 +234,8 @@ p1 <- ggplot(data.frame(y = pres), aes(sample = y)) +
   stat_qq(distribution = qunif, dparams = list(min = -1, max = 1), alpha  = 0.5)
 p1
 
-resids(m)
-predict(m, type = "probs")
+#resids(m)
+#predict(m, type = "probs")
 #autoplot(resids(m), what = "covariate", x  = predict(m, type = "probs"))
 
 residuals(m)
@@ -452,6 +452,69 @@ HR.WCE(m_wce, nonusers, users, allres = TRUE)
 ```
 
 ### PWP Model
+
+## Chilling Effect
+
+```{r}
+df_chill <- df_clean %>% 
+  filter(target_3 %in% c("COP", "GOV", "JUD", "MIL", "LLY", "SPY", "LEG", "TOP")) %>% 
+  mutate(repress = as.double(st_posture) %in% 5:7) %>% 
+  group_by(repress) %>% 
+  mutate(repress_id = as.double(row_number())) %>% 
+  mutate(repress_id = if_else(repress, repress_id, 0)) %>% 
+  ungroup()
+```
+
+```{r}
+df_chill_condense <- df_chill[, c("country_name", "date")]
+# functions to tell if events fell within a year of a repressive response
+prior_detector <- function(repress_id, date, country){
+  temp <- df_chill_condense %>% 
+    filter(country_name == country)
+  dates <- temp$date
+  fun <- sum(date - 365 < dates & date > dates) 
+  num <- ifelse(repress_id > 0, fun, 0)
+  return(num)
+}
+
+# near_detector <- function(repress_id, date, country){
+#   temp <- df_chill_condense %>% 
+#     filter(country_name == country)
+#   dates <- temp$date
+#   fun1 <- sum(date - 365 < dates & date > dates) 
+#   fun2 <- sum(date < dates & date + 365 > dates)
+#   num1 <- ifelse(repress_id > 0, fun1, 0)
+#   num2 <- ifelse(repress_id > 0, fun2, 0)
+#   return(list(num1, num2))
+# }
+
+post_detector <- function(repress_id, date, country){
+  temp <- df_chill_condense %>% 
+    filter(country_name == country) 
+  dates <- temp$date
+  fun <- sum(date < dates & date + 365 > dates)
+  num <- ifelse(repress_id > 0, fun, 0)
+  return(num)
+}
+
+prior_detector <- Vectorize(prior_detector)
+post_detector <- Vectorize(post_detector)
+```
+
+```{r}
+# vectorize? Takes a couple minutes to run
+df_chill_final <- df_chill %>% 
+  mutate(prior = prior_detector(repress_id, date, country_name)) %>% 
+  mutate(post = post_detector(repress_id, date, country_name))
+```
+
+```{r}
+df_chill_fn <- df_chill_final %>% 
+  filter(prior > 0)
+t.test(x = df_chill_fn$prior, y = df_chill_fn$post)
+```
+
+
 
 # References
 
