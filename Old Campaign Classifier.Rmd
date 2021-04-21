@@ -1,0 +1,118 @@
+---
+title: "Old Campaign Classifier"
+author: "Michael Li"
+date: "April 20, 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# read in NAVCO 2.0 dataset to categorize campaigns
+campaigns <- read_excel("data/NAVCO v2.0.xlsx")
+# filter for campaign years that occurred after 1990
+campaign_names <- campaigns %>% group_by(campaign, location) %>% 
+  filter(year >= 1990) %>% 
+  #mutate(start_year = min(year)) %>% 
+  #mutate(end_year = max(year)) %>% 
+  #slice(1) %>% 
+  dplyr::select(campaign, location, year)
+
+campaign_names$id <- seq.int(nrow(campaign_names))
+
+campaign_classifier <- function(df, camps) {
+  campaign_df <- data.frame()
+  for(i in 1:nrow(camps)) {
+    df_temp <- df[df$country_name == ifelse(grepl(" ", camps$location[i], 
+                                                   fixed = TRUE),
+                                             gsub(" ", "_",
+                                                  lowerCase(camps$location[i])),
+                                             lowerCase(camps$location[i]))
+                  & df$year == camps$year[i],] %>% 
+      # filter for protests against governmental (state) actors
+      filter(target_3 %in% c("COP", "GOV", "JUD", "MIL", "LLY", "SPY", "LEG", "TOP"))
+     #filter(target_3 == "GOV")
+    df_temp <- df_temp %>% arrange(date) # arrange dates to ensure time differential can be measured
+             
+    df_temp$id <- i
+    df_temp <- df_temp %>%
+      mutate(diff_time = as.double(date - lag(date))) # get time difference b/w protests
+    df_temp$diff_time[is.na(df_temp$diff_time)] <- 0
+    df_temp$Stop <- cumsum(df_temp$diff_time)
+    df_temp$Stop[df_temp$Stop == 0] <- 1
+    # df_temp <- df_temp %>% 
+    #   mutate(Start = lag(Stop))
+    # df_temp$Start[is.na(df_temp$Start)] <- 0
+    campaign_df <- rbind(campaign_df, df_temp)
+  }
+  return(campaign_df)
+}
+```
+
+```{r}
+campaign_df <- campaign_classifier(df_clean, campaign_names)
+campaign_df <- campaign_df %>% filter(!is.na(tactical_choice) & !is.na(st_posture))
+
+# classify governmental responses into binary variable for concessions Y/N
+campaign_df <- campaign_df %>% 
+  mutate(concessions = if_else(st_posture == "Full Accomodations" | 
+                         st_posture == "Material Concessions" | 
+                         st_posture == "Nonmaterial Concessions", 1, 0 ))
+
+# consolidate same-day protests
+campaign_df <- campaign_df %>% 
+  group_by(id, date) %>% 
+  mutate(num_protests_day = n()) %>% 
+  ungroup()
+
+campaign_df <- campaign_df %>% 
+  group_by(id, date) %>% 
+  slice(which.min(st_posture)) %>% 
+  ungroup
+
+# reorder factors to account for increasing violence progression
+campaign_df <- campaign_df %>% 
+  mutate(tactics = case_when(as.integer(tactical_choice) == 1 ~ 3.0, # violent (1) --> 3
+                             as.integer(tactical_choice) == 2 ~ 1.0, # non-violent (2) --> 1
+                             TRUE ~ 2.0)) # mixed(3) --> 1
+
+# categorize last concession as outcome of interest, we want to know how successful the  final protest of the campaign was
+# #campaign_df[campaign_df$concessions == 1, c("country_name", "Start", "Stop", "st_posture",
+# #                                            "camp_goals", "localities")]
+# campaign_conc <- campaign_df %>%
+#   filter(concessions == 1) %>% 
+#   group_by(id) %>% 
+#   slice(n()) %>% 
+#   ungroup()
+# 
+# campaign_df <- rbind(campaign_df %>%
+#                        filter(concessions == 0), campaign_conc) %>% 
+#   arrange(id, date) %>% 
+#   group_by(id) %>% 
+#   mutate(last_concession = min(which(concessions == 1 | row_number() ==n()))) %>%
+#   filter(row_number() <= last_concession) %>% 
+#   dplyr::select(-last_concession)
+```
+
+```{r}
+# match start dates to match events with complete information
+# campaign_df <- campaign_df %>% 
+#   filter(concessions == 1)
+campaign_df <- campaign_df %>% 
+  group_by(id) %>% 
+  mutate(Start = lag(Stop)) %>% 
+  ungroup()
+campaign_df$Start[is.na(campaign_df$Start)] <- 0
+
+# convert id to a double
+campaign_df$id <- as.double(campaign_df$id)
+
+# get number of protests
+campaign_df <- campaign_df %>% 
+  group_by(id) %>% 
+  mutate(enum = row_number()) %>% 
+  ungroup()
+
+```

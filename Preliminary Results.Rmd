@@ -21,6 +21,8 @@ library(WCE)
 library(survival)
 library(eha)
 library(survminer)
+library(MASS)
+library(sure)
 ```
 
 # Introduction
@@ -46,7 +48,7 @@ df <- read_excel("data/navco3-0full.xlsx")
 # clean dataset 
 # remove irrelevant variables
 df_clean <- df %>% 
-  select(-c(coder, event_desc, cowcode, source_title, arbitration, notes, decision))
+  dplyr::select(-c(coder, event_desc, cowcode, source_title, arbitration, notes, decision))
 ```
 
 ```{r, echo = F, warning = F, message = F}
@@ -139,7 +141,7 @@ df_clean <- df_clean %>%
          num_partic_event = case_when(is.na(partic_high) ~ as.double(partic_low),
                                 TRUE ~ (as.double(partic_low) + as.double(partic_high)) / 2)
          ) %>% 
-  select(-c(fatal_low, fatal_high, inj_low, inj_high, partic_low, partic_high))
+  dplyr::select(-c(fatal_low, fatal_high, inj_low, inj_high, partic_low, partic_high))
 ```
 
 # Exploratory Data Analysis
@@ -216,7 +218,6 @@ To determine whether or not a chilling effect stemming from severe governmental 
 
 ```{r}
 df_clean
-library(MASS)
 m <- polr(st_posture ~ factor(geo_scope, order = F) + actor_id + camp_goals + tactical_choice,
           data = df_clean, 
           na.action = na.omit,
@@ -226,118 +227,23 @@ mod_output_df$p_value <- pnorm(abs(mod_output_df[, "t value"]), lower.tail = FAL
 mod_output_df[, c("Value", "p_value")]
 unique(df_clean$camp_goals)
 summary(m)
+1-pchisq(deviance(m), df.residual(m))
+library(PResiduals)
+pres <- presid(m)
+p1 <- ggplot(data.frame(y = pres), aes(sample = y)) +
+  stat_qq(distribution = qunif, dparams = list(min = -1, max = 1), alpha  = 0.5)
+p1
+
+resids(m)
+predict(m, type = "probs")
+#autoplot(resids(m), what = "covariate", x  = predict(m, type = "probs"))
+
+residuals(m)
+?pchisq()
 ```
 
 
 ## Cumulative Protests
-
-```{r}
-# read in NAVCO 1.3 dataset to categorize campaigns
-campaigns <- read_excel("data/NAVCO v2.0.xlsx")
-# filter for campaign years that occurred after 1990
-campaign_names <- campaigns %>% group_by(campaign, location) %>% 
-  filter(year >= 1990) %>% 
-  #mutate(start_year = min(year)) %>% 
-  #mutate(end_year = max(year)) %>% 
-  #slice(1) %>% 
-  select(campaign, location, year)
-
-campaign_names$id <- seq.int(nrow(campaign_names))
-
-campaign_classifier <- function(df, camps) {
-  campaign_df <- data.frame()
-  for(i in 1:nrow(camps)) {
-    df_temp <- df[df$country_name == ifelse(grepl(" ", camps$location[i], 
-                                                   fixed = TRUE),
-                                             gsub(" ", "_",
-                                                  lowerCase(camps$location[i])),
-                                             lowerCase(camps$location[i]))
-                  & df$year == camps$year[i],] %>% 
-      # filter for protests against governmental (state) actors
-      filter(target_3 %in% c("COP", "GOV", "JUD", "MIL", "LLY", "SPY", "LEG", "TOP"))
-     #filter(target_3 == "GOV")
-    df_temp <- df_temp %>% arrange(date) # arrange dates to ensure time differential can be measured
-             
-    df_temp$id <- i
-    df_temp <- df_temp %>%
-      mutate(diff_time = as.double(date - lag(date))) # get time difference b/w protests
-    df_temp$diff_time[is.na(df_temp$diff_time)] <- 0
-    df_temp$Stop <- cumsum(df_temp$diff_time)
-    df_temp$Stop[df_temp$Stop == 0] <- 1
-    # df_temp <- df_temp %>% 
-    #   mutate(Start = lag(Stop))
-    # df_temp$Start[is.na(df_temp$Start)] <- 0
-    campaign_df <- rbind(campaign_df, df_temp)
-  }
-  return(campaign_df)
-}
-```
-
-```{r}
-campaign_df <- campaign_classifier(df_clean, campaign_names)
-campaign_df <- campaign_df %>% filter(!is.na(tactical_choice) & !is.na(st_posture))
-
-# classify governmental responses into binary variable for concessions Y/N
-campaign_df <- campaign_df %>% 
-  mutate(concessions = if_else(st_posture == "Full Accomodations" | 
-                         st_posture == "Material Concessions" | 
-                         st_posture == "Nonmaterial Concessions", 1, 0 ))
-
-# consolidate same-day protests
-campaign_df <- campaign_df %>% 
-  group_by(id, date) %>% 
-  mutate(num_protests_day = n()) %>% 
-  ungroup()
-
-campaign_df <- campaign_df %>% 
-  group_by(id, date) %>% 
-  slice(which.min(st_posture)) %>% 
-  ungroup
-
-# reorder factors to account for increasing violence progression
-campaign_df <- campaign_df %>% 
-  mutate(tactics = case_when(as.integer(tactical_choice) == 1 ~ 3.0, # violent (1) --> 3
-                             as.integer(tactical_choice) == 2 ~ 1.0, # non-violent (2) --> 1
-                             TRUE ~ 2.0)) # mixed(3) --> 1
-
-# categorize last concession as outcome of interest, we want to know how successful the  final protest of the campaign was
-# #campaign_df[campaign_df$concessions == 1, c("country_name", "Start", "Stop", "st_posture",
-# #                                            "camp_goals", "localities")]
-# campaign_conc <- campaign_df %>%
-#   filter(concessions == 1) %>% 
-#   group_by(id) %>% 
-#   slice(n()) %>% 
-#   ungroup()
-# 
-# campaign_df <- rbind(campaign_df %>%
-#                        filter(concessions == 0), campaign_conc) %>% 
-#   arrange(id, date) %>% 
-#   group_by(id) %>% 
-#   mutate(last_concession = min(which(concessions == 1 | row_number() ==n()))) %>%
-#   filter(row_number() <= last_concession) %>% 
-#   select(-last_concession)
-```
-
-```{r}
-# match start dates to match events with complete information
-# campaign_df <- campaign_df %>% 
-#   filter(concessions == 1)
-campaign_df <- campaign_df %>% 
-  group_by(id) %>% 
-  mutate(Start = lag(Stop)) %>% 
-  ungroup()
-campaign_df$Start[is.na(campaign_df$Start)] <- 0
-
-# convert id to a double
-campaign_df$id <- as.double(campaign_df$id)
-
-# get number of protests
-campaign_df <- campaign_df %>% 
-  group_by(id) %>% 
-  mutate(enum = row_number()) %>% 
-  ungroup()
-
-```
 
 ```{r}
 df_pwp <- df_clean %>% 
@@ -398,7 +304,7 @@ df_pwp <- rbind(df_pwp %>%
   group_by(id) %>%
   mutate(last_concession = min(which(concessions == 1 | row_number() ==n()))) %>%
   filter(row_number() <= last_concession) %>%
-  select(-last_concession)
+  dplyr::select(-last_concession)
 
 
 # match start dates to match events with complete information
@@ -452,7 +358,6 @@ ggcoxdiagnostics(pwp1, type = "deviance", linear.predictions = F) +
   labs(title = "Deviance Residuals",
          x = "Linear Predictions",
          y = "Residuals")
-drugdata
 ```
 
 ```{r}
@@ -461,67 +366,92 @@ df_pwp$tactics <- as.integer(df_pwp$tactics)
 checkWCE(as.data.frame(df_pwp), id = "id", event = "concessions", start = "Start",
          stop = "Stop", expos = "tactics")
 
+```
 
-dog <- WCE(as.data.frame(chicken), analysis = "Cox", cutoff = 250, nknots = 1:3, 
+```{r}
+df_wce <- df_pwp %>% 
+  dplyr::select(id, date, geo_scope, actor_id, camp_goals, tactics, damage, econ_impact,
+                fatal_casu, injuries, num_partic_event,
+                concessions, num_protests_day)
+df_wce$damage <- as.double(df_wce$damage)
+df_wce$econ_impact <- as.double(df_wce$econ_impact)
+df_wce[is.na(df_wce$damage), c("damage")] <- 0
+df_wce[is.na(df_wce$econ_impact), c("econ_impact")] <- 0
+df_wce[is.na(df_wce$fatal_casu), c("fatal_casu")] <- 0
+df_wce[is.na(df_wce$injuries), c("injuries")] <- 0
+df_wce[is.na(df_wce$num_partic_event), c("num_partic_event")] <- 0
+df_wce$doy <- as.double(strftime(df_wce$date, format = "%j"))
+```
+
+```{r}
+df_wce$geo_scope <- as.character(df_wce$geo_scope)
+df_wce$actor_id <- as.character(df_wce$actor_id)
+df_wce$camp_goals <- as.character(df_wce$camp_goals)
+
+non_protest_day_maker <- function(df) {
+  ly <- seq(from = 1992, to = 2012, by = 4) # years that are leap years
+  year <- as.double(format(date, "%Y")) # extract year
+  days_ly <- 1:366
+  days_nly <- 1:365
+  ly_indicator <- year %in% ly
+  ly_newdays <- days_ly[!(1:366) %in% df$doy]
+  nly_newdays <- days_nly[!(1:365) %in% df$doy]
+  if(ly_indicator) {
+    days_to_add <-days_ly[!(1:366) %in% df$doy]
+  }
+  else {
+    days_to_add <- days_nly[!(1:365) %in% df$doy]
+  }
+  num_rows <- length(days_to_add)
+  id <- df$id[1]
+  zeros <- rep(0, num_rows)
+  new_rows <- bind_cols(rep(id, num_rows), rep(as.Date("1982-01-13", format = "%m/%d/%y"), num_rows), rep("", num_rows), rep("", num_rows), #id, date, geo_scope, actor_id
+                    rep("", num_rows), zeros, zeros, # camp_goals, tactics, damage
+                    zeros, zeros, zeros, # econ_impact, fatal_casu, injuries
+                    zeros, zeros, zeros, # num_partic_event, concessions, num_protests_day
+                    days_to_add) # doy 
+  colnames(new_rows) <- c("id", "date", "geo_scope", "actor_id", "camp_goals",
+                          "tactics", "damage", "econ_impact", "fatal_casu", "injuries",
+                          "num_partic_event", "concessions", "num_protests_day", "doy")
+  df_comb <- rbind(df, new_rows)
+  return(df_comb)
+}
+```
+
+```{r, echo = F, warning = F, message = F}
+df_wce_final <- df_wce %>% group_by(id) %>% 
+  #group_map(~non_protest_day_maker(.x))
+  do(data.frame(non_protest_day_maker(.))) %>% 
+  arrange(id, doy) %>% 
+  ungroup()
+
+df_wce_final <- df_wce_final %>% group_by(id) %>% 
+  mutate(Start  = doy - 1) %>% 
+  mutate(Stop = doy) %>% 
+  dplyr::select(-c("date", "doy", "actor_id", "camp_goals"))
+
+df_wce_final$geo_scope <- as.double(ordered(df_wce_final$geo_scope, levels = c("", "local", "regional", "national", "international regional", "global")))
+df_wce_final
+
+checkWCE(as.data.frame(df_wce_final), id = "id", event = "concessions", start = "Start",
+         stop = "Stop", expos = "tactics")
+m_wce <- WCE(as.data.frame(df_wce_final), analysis = "Cox", cutoff = 366, nknots = 1:3, 
     constrained = "R", aic = FALSE, MatchedSet = NULL,
     id = "id", 
     event = "concessions", 
     start = "Start", stop = "Stop", expos = "tactics",
-    covariates = c("geo_scope"))
-summary(dog)
-dog
-plot(dog)
-nonusers <- rep(0, 250)
-users <- rep(3, 250)
+    covariates = c("geo_scope", "damage", "econ_impact", "fatal_casu", "injuries",
+                   "num_partic_event", "num_protests_day"))
+m_wce
+summary(m_wce)
+plot(m_wce)
+nonusers <- rep(1, 366)
+users <- rep(0, 366)
 # for all models
-HR.WCE(dog, users, nonusers, allres = TRUE)
-chicken$geo_scope <- as.integer(chicken$geo_scope)
-
-chicken <- df_pwp %>% group_by(id) %>% 
-  mutate(Stop = row_number()) %>% 
-  mutate(Start = Stop - 1)
-df_pwp
-as.data.frame(df_pwp[, c("id", "concessions", "Start", "Stop", "tactics", "geo_scope")])
-drugdata %>% 
-  group_by(Id) %>% 
-  mutate(count = row_number()) %>% 
-  slice_tail()
-length(df_pwp$tactics)
-coef.WCE(dog)
-sum(is.na(df_pwp$tactics))
-campaign_df[, c("id", "concessions", "Start", "Stop", "tactics")]
+HR.WCE(m_wce, nonusers, users, allres = TRUE)
 ```
 
-```{r}
-checkWCE(as.data.frame(df_pwp), id = "id", event = "concessions", start = "Start",
-         stop = "Stop", expos = "tactics")
-
-WCE(as.data.frame(campaign_df[1:100,]), analysis = "Cox", cutoff = 1000, nknots = 1:3, id = "id", 
-    event = "concessions", 
-    start = "Start", stop = "Stop", expos = "tactics")
-as.data.frame(campaign_df)
-campaign_df %>% group_by(id) %>% 
-  mutate(count = row_number()) %>% 
-  slice(n()) %>% 
-  select(country_name, count)
-
-library(WCE)
-data(drugdata)
-unique(drugdata[,c("Event")])
-length(unique(data[,c("Event")]))!=2
-drugdata
-WCE(drugdata, analysis = "Cox", cutoff = 90, nknots = 1:1, id = "Id", 
-    event = "Event", 
-    start = "Start", stop = "Stop", expos = "dose")
-
-hold <- drugdata %>% group_by(Id) %>% 
-  summarise(count = n())
-hold
-data()
-misc
-campaign_df
-```
-
+### PWP Model
 
 # References
 
