@@ -26,6 +26,7 @@ library(MASS)
 library(sure)
 library(simpleboot)
 library(AER)
+library(PResiduals)
 ```
 
 # Introduction
@@ -58,7 +59,7 @@ df_clean <- df %>%
 # separate out date into 3 columns
 df_clean$date <- as.Date(df_clean$date)
 df_clean <- df_clean %>% 
-  mutate(year = as.double(format(date, format = "%Y")),
+  dplyr::mutate(year = as.double(format(date, format = "%Y")),
                  month = as.double(format(date, format = "%m")),
                  day = as.double(format(date, format = "%d")))
 ```
@@ -124,9 +125,8 @@ df_clean$damage <- ordered(df_clean$damage, levels = 0:3,
                                          "significant", "substantial"))
 
 # recode 0s as 1s since 1 corresponds to "little or no impact" already
-df_clean$econ_impact[df_clean$econ_impact == 0] <- 1 
-df_clean$econ_impact <- ordered(df_clean$econ_impact, levels = 1:3, 
-                              labels = c("little", "significant",
+df_clean$econ_impact <- ordered(df_clean$econ_impact, levels = 0:3, 
+                              labels = c("none","little", "significant",
                                          "heavy"))
 ```
 
@@ -137,7 +137,7 @@ df_clean <- df_clean %>%
   separate(fatal_casu, into = c("fatal_low", "fatal_high"), sep = "-") %>%  # R will remove spaces when coercing
   separate(injuries, into = c("inj_low", "inj_high"), sep = "-") %>% 
   separate(num_partic_event, into = c("partic_low", "partic_high"), sep = "-") %>% 
-  mutate(fatal_casu = case_when(is.na(fatal_high) ~ as.double(fatal_low),
+  dplyr::mutate(fatal_casu = case_when(is.na(fatal_high) ~ as.double(fatal_low),
                                 TRUE ~ (as.double(fatal_low) + as.double(fatal_high)) / 2),
          injuries = case_when(is.na(inj_high) ~ as.double(inj_low),
                                 TRUE ~ (as.double(inj_low) + as.double(inj_high)) / 2),
@@ -146,6 +146,29 @@ df_clean <- df_clean %>%
          ) %>% 
   dplyr::select(-c(fatal_low, fatal_high, inj_low, inj_high, partic_low, partic_high))
 ```
+
+```{r}
+# reclean data to categorize NA values in continuous variables as zero (assume no or negligble values for NAs)
+df_clean[is.na(df_clean$damage), c("damage")] <- "minor"
+df_clean[is.na(df_clean$econ_impact), c("econ_impact")] <- "none"
+df_clean[is.na(df_clean$fatal_casu), c("fatal_casu")] <- 0
+df_clean[is.na(df_clean$injuries), c("injuries")] <- 0
+#df_clean[is.na(df_clean$num_partic_event), c("num_partic_event")] <- 0
+
+# df_clean %>% 
+#   filter(!is.na(nv_categ), !is.na(nc_type), !is.na(nv_commission), 
+#          !is.na(nv_concentration))
+
+## reorder variables actor_id, verb_10?, camp_goals, tactical_choice, st_posture
+df_clean$actor_id <- factor(df_clean$actor_id, ordered = FALSE)
+df_clean$camp_goals <- factor(df_clean$camp_goals, ordered = FALSE)
+df_clean$actor_id <- factor(df_clean$actor_id, ordered = FALSE)
+df_clean <- df_clean %>% 
+  dplyr::mutate(tactical_choice = factor(case_when(as.integer(tactical_choice) == 1 ~ 3.0, # violent (1) --> 3
+                             as.integer(tactical_choice) == 2 ~ 1.0, # non-violent (2) --> 1
+                             TRUE ~ 2.0), order = TRUE, levels = c(1, 2, 3))) # mixed(3) --> 2
+```
+
 
 # Exploratory Data Analysis
 ```{r, echo = F, warning = F, message = F, fig.width = 13}
@@ -219,30 +242,73 @@ To determine whether or not a chilling effect stemming from severe governmental 
 
 ## Protest Success
 
+```{r, echo = F, warning = F, message = F}
+# collapse levels of categorical variables
+df_ord <- df_clean
+levels(df_ord$actor_id) <- list(state = c("state", "local state"), 
+                              international = c("international"),
+                              `non-state` = c("non-state", "nonaligned"))
+levels(df_ord$camp_goals) <- list(`Regime Change` = c("Regime Change"), 
+                              `Institutional Reform` = c("Institutional Reform"),
+                              `Policy Change` = c("Policy Change"),
+                              `Territorial Secession` = c("Territorial Secession"),
+                              `Autonomy` = c("Autonomy", "Anti-occupation"),
+                              `Unknown` = c("Unknown"),
+                              `Missing` = c("Missing"))
+
+#https://stats.idre.ucla.edu/r/dae/ordinal-logistic-regression/
+
+# define function to find log odds of being greater than or equal to given response level
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)), # y >= 1 gives 0/1 vector and taking mean gives probability of being >= 1
+    'Y>=2' = qlogis(mean(y >= 2)), # convert probability of being greater than the response to log odds
+    'Y>=3' = qlogis(mean(y >= 3)),
+    'Y>=4' = qlogis(mean(y >= 4)),
+    'Y>=5' = qlogis(mean(y >= 5)),
+    'Y>=6' = qlogis(mean(y >= 6)),
+    'Y>=7' = qlogis(mean(y >= 7)))
+}
+
+require(Hmisc)
+cat_table <- with(df_ord, summary(as.numeric(st_posture) ~  factor(geo_scope, order = F) + actor_id + camp_goals + tactical_choice,
+                                  fun = sf))
+```
+
+```{r echo = F, warning = F, message = F, fig.align='center', fig.height = 18, fig.width = 9}
+# this allows us to see the logits relative to the logit for y >= 2
+cat_table[,8] <- cat_table[,8] - cat_table[,3]
+cat_table[,7] <- cat_table[,7] - cat_table[,3]
+cat_table[,6] <- cat_table[,6] - cat_table[,3]
+cat_table[,5] <- cat_table[,5] - cat_table[,3]
+cat_table[,4] <- cat_table[,4] - cat_table[,3]
+cat_table[,3] <- cat_table[,3] - cat_table[,3]
+
+plot(cat_table, which = 1:7, pch = 1:7, xlab = "Difference in Log Odds", 
+     main = "Figure 3: Proportional Odds Assumption Satisfied by Data", 
+     xlim = range(cat_table[,3:8]))
+```
+
+
 ```{r}
-df_clean
-m <- polr(st_posture ~ factor(geo_scope, order = F) + actor_id + camp_goals + tactical_choice,
+m_ord <- polr(st_posture ~ factor(geo_scope, order = F) + actor_id + camp_goals + tactical_choice,
           data = df_clean, 
-          na.action = na.omit,
+          #na.action = na.omit,
           Hess = TRUE)
-mod_output_df <- as.data.frame(summary(m)$coefficients)
+summary(m_ord)
+mod_output_df <- as.data.frame(summary(m_ord)$coefficients)
 mod_output_df$p_value <- pnorm(abs(mod_output_df[, "t value"]), lower.tail = FALSE) * 2
 mod_output_df[, c("Value", "p_value")]
-unique(df_clean$camp_goals)
-summary(m)
-1-pchisq(deviance(m), df.residual(m))
-library(PResiduals)
-pres <- presid(m)
-p1 <- ggplot(data.frame(y = pres), aes(sample = y)) +
+1-pchisq(deviance(m_ord), df.residual(m_ord))
+pres <- presid(m_ord)
+ggplot(data.frame(y = pres), aes(sample = y)) +
   stat_qq(distribution = qunif, dparams = list(min = -1, max = 1), alpha  = 0.5)
-p1
+
 
 #resids(m)
-#predict(m, type = "probs")
-#autoplot(resids(m), what = "covariate", x  = predict(m, type = "probs"))
+#predict(m_ord, type = "probs")
+#autoplot(resids(m_ord), what = "covariate", x  = predict(m, type = "probs"))
 
-residuals(m)
-?pchisq()
+#residuals(m_ord)
 ```
 
 
@@ -253,6 +319,8 @@ df_pwp <- df_clean %>%
   group_by(country_name, year) %>% 
   filter(target_3 %in% c("COP", "GOV", "JUD", "MIL", "LLY", "SPY", "LEG", "TOP")) %>% 
   ungroup()
+
+df_pwp <- df_pwp %>% filter(!is.na(tactical_choice) & !is.na(st_posture))
   
 df_pwp$id <- df_pwp %>% group_by(country_name, year) %>% 
   group_indices() 
@@ -261,77 +329,70 @@ df_pwp <- df_pwp %>%
   ungroup() %>% 
   arrange(id, date) %>% 
   group_by(id) %>% 
-  mutate(diff_time = as.double(date - lag(date))) # get time difference b/w protests
+  dplyr::mutate(diff_time = as.double(date - lag(date))) # get time difference b/w protests
 
 df_pwp$diff_time[is.na(df_pwp$diff_time)] <- 0
-df_pwp$Stop <- cumsum(df_pwp$diff_time)
-df_pwp$Stop[df_pwp$Stop == 0] <- 1
-
-df_pwp <- df_pwp %>% filter(!is.na(tactical_choice) & !is.na(st_posture))
+df_temp <- df_pwp %>% group_by(id) %>% 
+  dplyr::mutate(Stop = cumsum(diff_time) + 1)
+df_pwp$Stop <- df_temp$Stop
 
 # classify governmental responses into binary variable for concessions Y/N
 df_pwp <- df_pwp %>% 
-  mutate(concessions = if_else(st_posture == "Full Accomodations" | 
+  dplyr::mutate(concessions = if_else(st_posture == "Full Accomodations" | 
                          st_posture == "Material Concessions" | 
                          st_posture == "Nonmaterial Concessions", 1, 0 ))
 
 # consolidate same-day protests
 df_pwp <- df_pwp %>% 
   group_by(id, date) %>% 
-  mutate(num_protests_day = n()) %>% 
+  dplyr::mutate(num_protests_day = n()) %>% 
   ungroup()
 
 df_pwp <- df_pwp %>% 
   group_by(id, date) %>% 
   slice(which.min(st_posture)) %>% 
-  ungroup
+  ungroup()
+```
 
-# reorder factors to account for increasing violence progression
-df_pwp <- df_pwp %>% 
-  mutate(tactics = factor(case_when(as.integer(tactical_choice) == 1 ~ 3.0, # violent (1) --> 3
-                             as.integer(tactical_choice) == 2 ~ 1.0, # non-violent (2) --> 1
-                             TRUE ~ 2.0), order = TRUE, levels = c(1, 2, 3))) # mixed(3) --> 1
 
-####???KDLFK
-
-df_pwp_conc <- df_pwp %>%
+```{r}
+# filter to get final concession made in response to a campaign
+df_wce_conc <- df_pwp %>%
   filter(concessions == 1) %>%
   group_by(id) %>%
   slice(n()) %>%
   ungroup()
-df_pwp_conc
 
-df_pwp <- rbind(df_pwp %>%
-                       filter(concessions == 0), df_pwp_conc) %>%
+df_wce <- rbind(df_pwp %>%
+                       filter(concessions == 0), df_wce_conc) %>%
   arrange(id, date) %>%
   group_by(id) %>%
-  mutate(last_concession = min(which(concessions == 1 | row_number() ==n()))) %>%
+  dplyr::mutate(last_concession = min(which(concessions == 1 | row_number() ==n()))) %>%
   filter(row_number() <= last_concession) %>%
   dplyr::select(-last_concession)
 
-
 # match start dates to match events with complete information
-df_pwp <- df_pwp %>% 
+df_wce <- df_wce %>% 
   group_by(id) %>% 
-  mutate(Start = lag(Stop)) %>% 
+  dplyr::mutate(Start = lag(Stop)) %>% 
   ungroup()
-df_pwp$Start[is.na(df_pwp$Start)] <- 0
+df_wce$Start[is.na(df_wce$Start)] <- 0
 
 # convert id to a double
-df_pwp$id <- as.double(df_pwp$id)
+df_wce$id <- as.double(df_wce$id)
 
 # get number of protests
-df_pwp <- df_pwp %>% 
+df_wce <- df_wce %>% 
   group_by(id) %>% 
   #filter(concessions == 1) %>% 
-  mutate(enum = row_number()) %>% 
-  mutate(enum = if_else(enum >= 8, 8, as.double(enum))) %>% 
+  dplyr::mutate(enum = row_number()) %>% 
+  dplyr::mutate(enum = if_else(enum >= 8, 8, as.double(enum))) %>% 
   ungroup()
-unique(df_pwp$enum)
+
 
 # continent variable
-df_pwp <- df_pwp %>% 
-  mutate(region = case_when(country_name %in% c("algeria", "egypt",
+df_wce <- df_wce %>% 
+  dplyr::mutate(region = case_when(country_name %in% c("algeria", "egypt",
                                                    "kenya", "libya", 
                                                    "madagascar", "morocco",
                                                 "sierra_leone", "south_sudan",
@@ -343,38 +404,20 @@ df_pwp <- df_pwp %>%
                                                    "south_korea", "uzbekistan") ~ "Asia",
                                country_name %in% c("estonia", "ukraine") ~ "Europe",
                                TRUE ~ "Americas")) # Mexico, U.S.
-
-
-pwp1 <- coxph(Surv(Stop, concessions) ~ cluster(id)+ strata(enum) + tactics * strata(enum) 
-              + region * strata(enum) + geo_scope * strata(enum) + 
-                as.factor(camp_goals) * strata(enum), 
-            data = df_pwp)
-summary(pwp1)
-pwp1
-ggcoxdiagnostics(pwp1, type = "deviance", linear.predictions = T) +
-  labs(title = "Deviance Residuals",
-         x = "Linear Predictions",
-         y = "Residuals") + 
-  xlim(c(-3,3))
-
-ggcoxdiagnostics(pwp1, type = "deviance", linear.predictions = F) +
-  labs(title = "Deviance Residuals",
-         x = "Linear Predictions",
-         y = "Residuals")
 ```
 
 ```{r}
-df_pwp$tactics <- as.integer(df_pwp$tactics)
+df_wce$tactical_choice <- as.integer(df_wce$tactical_choice)
 
-checkWCE(as.data.frame(df_pwp), id = "id", event = "concessions", start = "Start",
-         stop = "Stop", expos = "tactics")
+# checkWCE(as.data.frame(df_wce), id = "id", event = "concessions", start = "Start",
+#          stop = "Stop", expos = "tactical_choice")
 
 ```
 
 ```{r}
-df_wce <- df_pwp %>% 
-  dplyr::select(id, date, geo_scope, actor_id, camp_goals, tactics, damage, econ_impact,
-                fatal_casu, injuries, num_partic_event,
+df_wce <- df_wce %>% 
+  dplyr::select(id, date, geo_scope, actor_id, camp_goals, tactical_choice, damage, econ_impact,
+                fatal_casu, injuries,
                 concessions, num_protests_day)
 df_wce$damage <- as.double(df_wce$damage)
 df_wce$econ_impact <- as.double(df_wce$econ_impact)
@@ -382,7 +425,7 @@ df_wce[is.na(df_wce$damage), c("damage")] <- 0
 df_wce[is.na(df_wce$econ_impact), c("econ_impact")] <- 0
 df_wce[is.na(df_wce$fatal_casu), c("fatal_casu")] <- 0
 df_wce[is.na(df_wce$injuries), c("injuries")] <- 0
-df_wce[is.na(df_wce$num_partic_event), c("num_partic_event")] <- 0
+#df_wce[is.na(df_wce$num_partic_event), c("num_partic_event")] <- 0
 df_wce$doy <- as.double(strftime(df_wce$date, format = "%j"))
 ```
 
@@ -409,13 +452,13 @@ non_protest_day_maker <- function(df) {
   id <- df$id[1]
   zeros <- rep(0, num_rows)
   new_rows <- bind_cols(rep(id, num_rows), rep(as.Date("1982-01-13", format = "%m/%d/%y"), num_rows), rep("", num_rows), rep("", num_rows), #id, date, geo_scope, actor_id
-                    rep("", num_rows), zeros, zeros, # camp_goals, tactics, damage
+                    rep("", num_rows), zeros, zeros, # camp_goals, tactical_choice, damage
                     zeros, zeros, zeros, # econ_impact, fatal_casu, injuries
-                    zeros, zeros, zeros, # num_partic_event, concessions, num_protests_day
+                    zeros, zeros, # num_partic_event, concessions, num_protests_day
                     days_to_add) # doy 
   colnames(new_rows) <- c("id", "date", "geo_scope", "actor_id", "camp_goals",
-                          "tactics", "damage", "econ_impact", "fatal_casu", "injuries",
-                          "num_partic_event", "concessions", "num_protests_day", "doy")
+                          "tactical_choice", "damage", "econ_impact", "fatal_casu", "injuries",
+                          "concessions", "num_protests_day", "doy")
   df_comb <- rbind(df, new_rows)
   return(df_comb)
 }
@@ -429,22 +472,22 @@ df_wce_final <- df_wce %>% group_by(id) %>%
   ungroup()
 
 df_wce_final <- df_wce_final %>% group_by(id) %>% 
-  mutate(Start  = doy - 1) %>% 
-  mutate(Stop = doy) %>% 
+  dplyr::mutate(Start  = doy - 1) %>% 
+  dplyr::mutate(Stop = doy) %>% 
   dplyr::select(-c("date", "doy", "actor_id", "camp_goals"))
 
 df_wce_final$geo_scope <- as.double(ordered(df_wce_final$geo_scope, levels = c("", "local", "regional", "national", "international regional", "global")))
 df_wce_final
 
 checkWCE(as.data.frame(df_wce_final), id = "id", event = "concessions", start = "Start",
-         stop = "Stop", expos = "tactics")
+         stop = "Stop", expos = "tactical_choice")
 m_wce <- WCE(as.data.frame(df_wce_final), analysis = "Cox", cutoff = 366, nknots = 1:3, 
     constrained = "R", aic = FALSE, MatchedSet = NULL,
     id = "id", 
     event = "concessions", 
-    start = "Start", stop = "Stop", expos = "tactics",
+    start = "Start", stop = "Stop", expos = "tactical_choice",
     covariates = c("geo_scope", "damage", "econ_impact", "fatal_casu", "injuries",
-                   "num_partic_event", "num_protests_day"))
+                   "num_protests_day"))
 m_wce
 summary(m_wce)
 plot(m_wce)
@@ -452,19 +495,84 @@ nonusers <- rep(1, 366)
 users <- rep(0, 366)
 # for all models
 HR.WCE(m_wce, nonusers, users, allres = TRUE)
+df_wce_final
 ```
 
 ### PWP Model
+
+```{r}
+# match start dates to match events with complete information
+df_pwp_final <- df_pwp
+
+# convert id to a double
+df_pwp_final$id <- as.double(df_pwp_final$id)
+
+# get number of protests that led to concessions
+df_pwp_final <- df_pwp_final %>% 
+  group_by(id) %>% 
+  dplyr::mutate(row_count = row_number()) %>% 
+  filter(concessions == 1 | row_count == max(row_count)) %>% 
+  # dplyr::mutate(enum = if_else(concessions == 1,
+  #                              row_number(),
+  #                              as.integer(0))) %>% 
+  dplyr::mutate(enum = row_number()) %>% 
+  dplyr::mutate(enum = if_else(enum >= 8, 8, as.double(enum))) %>% 
+  ungroup()
+
+# match start dates to events with complete info
+df_pwp_final <- df_pwp_final %>% 
+  group_by(id) %>% 
+  dplyr::mutate(Start = lag(Stop)) %>% 
+  ungroup()
+df_pwp_final$Start[is.na(df_pwp_final$Start)] <- 0
+
+# continent variable
+df_pwp_final <- df_pwp_final %>% 
+  dplyr::mutate(region = case_when(country_name %in% c("algeria", "egypt",
+                                                   "kenya", "libya", 
+                                                   "madagascar", "morocco",
+                                                "sierra_leone", "south_sudan",
+                                                "sudan", "tanzania", "tunisia") ~ "Africa",
+                               country_name %in% c("iraq", "jordan", "syria",
+                                                   "turkey", "yemen") ~ "Middle East",
+                               country_name %in% c("bahrain", "china", 
+                                                   "india", "pakistan",
+                                                   "south_korea", "uzbekistan") ~ "Asia",
+                               country_name %in% c("estonia", "ukraine") ~ "Europe",
+                               TRUE ~ "Americas")) # Mexico, U.S.
+
+pwp1 <- coxph(Surv(Stop, concessions) ~ cluster(id)+ strata(enum) + factor(tactical_choice, order = F) * strata(enum) 
+              + region * strata(enum) + factor(geo_scope, order = F) * strata(enum) + 
+                factor(camp_goals, order = F) * strata(enum), 
+            data = df_pwp_final)
+
+summary(pwp1)
+df_pwp_final
+pwp1$coefficients
+pwp1$t
+df_pwp_final
+pwp1
+ggcoxdiagnostics(pwp1, type = "deviance", linear.predictions = T) +
+  labs(title = "Deviance Residuals",
+         x = "Linear Predictions",
+         y = "Residuals") + 
+  xlim(c(-5,5))
+
+ggcoxdiagnostics(pwp1, type = "deviance", linear.predictions = F) +
+  labs(title = "Deviance Residuals",
+         x = "Linear Predictions",
+         y = "Residuals")
+```
 
 ## Chilling Effect
 
 ```{r}
 df_chill <- df_clean %>% 
   filter(target_3 %in% c("COP", "GOV", "JUD", "MIL", "LLY", "SPY", "LEG", "TOP")) %>% 
-  mutate(repress = as.double(st_posture) %in% 5:7) %>% 
+  dplyr::mutate(repress = as.double(st_posture) %in% 5:7) %>% 
   group_by(repress) %>% 
-  mutate(repress_id = as.double(row_number())) %>% 
-  mutate(repress_id = if_else(repress, repress_id, 0)) %>% 
+  dplyr::mutate(repress_id = as.double(row_number())) %>% 
+  dplyr::mutate(repress_id = if_else(repress, repress_id, 0)) %>% 
   ungroup()
 ```
 
@@ -507,8 +615,8 @@ post_detector <- Vectorize(post_detector)
 ```{r}
 # vectorize? Takes a couple minutes to run
 df_chill_final <- df_chill %>% 
-  mutate(prior = prior_detector(repress_id, date, country_name)) %>% 
-  mutate(post = post_detector(repress_id, date, country_name))
+  dplyr::mutate(prior = prior_detector(repress_id, date, country_name)) %>% 
+  dplyr::mutate(post = post_detector(repress_id, date, country_name))
 ```
 
 ```{r}
@@ -537,10 +645,11 @@ ggplot(df_chill_eda, aes(x = freq_protests, color = Timing)) +
        x = "Protest Frequency", 
        y = "Count")
 ```
+
 ```{r}
 # create continent variable
 df_chill_glm <- df_chill_eda %>% 
-  mutate(region = case_when(country_name %in% c("algeria", "egypt",
+  dplyr::mutate(region = case_when(country_name %in% c("algeria", "egypt",
                                                    "kenya", "libya", 
                                                    "madagascar", "morocco",
                                                 "sierra_leone", "south_sudan",
@@ -566,8 +675,21 @@ dispersiontest(m_chill_poiss)
 m_chill_nb <- glm.nb(freq_protests ~ Timing + region + geo_scope + 
                        actor_id + camp_goals + tactical_choice + st_posture + year, 
     data = df_chill_glm)
+
+# Negative Binomial Model for mean differences
+df_chill_diff <- df_chill_glm %>% 
+  group_by(repress_id) %>% 
+  dplyr::mutate(diff = freq_protests[Timing == "prior"] - freq_protests) %>% 
+  slice_tail() %>% 
+  ungroup()
+m_chill_nb_diff <- glm.nb(abs(diff) ~ region + geo_scope + 
+                       actor_id + camp_goals + tactical_choice + st_posture + year, 
+    data = df_chill_diff)
+
+summary(m_chill_nb_diff)
 summary(m_chill_nb)
 plot(m_chill_nb$fitted.values,m_chill_nb$residuals, xlab = "Fitted Values", ylab = "Pearson Residuals", main = "Residual Plot Shows No Pattern in Residuals")
+plot(m_chill_nb_diff$fitted.values,m_chill_nb_diff$residuals, xlab = "Fitted Values", ylab = "Pearson Residuals", main = "Residual Plot Shows No Pattern in Residuals")
 ```
 
 
