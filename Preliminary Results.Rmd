@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, echo = F, warning = F, message = F}
 library(readxl)
 library(ggplot2)
+library(plyr)
 library(tidyverse)
 library(sjlabelled)
 library(splus2R)
@@ -23,6 +24,8 @@ library(eha)
 library(survminer)
 library(MASS)
 library(sure)
+library(simpleboot)
+library(AER)
 ```
 
 # Introduction
@@ -510,11 +513,86 @@ df_chill_final <- df_chill %>%
 
 ```{r}
 df_chill_fn <- df_chill_final %>% 
-  filter(prior > 0)
-t.test(x = df_chill_fn$prior, y = df_chill_fn$post)
+  filter(repress_id > 0)
 ```
 
 
+```{r}
+# chilling effect eda
+df_chill_eda <- df_chill_fn %>% 
+  pivot_longer(cols = c("prior", "post"),
+             names_to = "Timing",
+             values_to = "freq_protests")
+
+mu <- ddply(df_chill_eda, "Timing", summarise, grp.mean = mean(freq_protests))
+mu
+
+ggplot(df_chill_eda, aes(x = freq_protests, color = Timing)) +
+  geom_histogram(aes(y =..density..), binwidth = 100) +
+  geom_density(alpha = 0.2) +
+  geom_vline(data = mu, aes(xintercept = grp.mean, color = Timing),
+             linetype = "dashed") + 
+  labs(title = "Higher Incidence of Low Protest Frequencies Following Severe Responses",
+       subtitle = "However, Densities Look Similar and Difference Between Means is Moderate",
+       x = "Protest Frequency", 
+       y = "Count")
+```
+```{r}
+# create continent variable
+df_chill_glm <- df_chill_eda %>% 
+  mutate(region = case_when(country_name %in% c("algeria", "egypt",
+                                                   "kenya", "libya", 
+                                                   "madagascar", "morocco",
+                                                "sierra_leone", "south_sudan",
+                                                "sudan", "tanzania", "tunisia") ~ "Africa",
+                               country_name %in% c("iraq", "jordan", "syria",
+                                                   "turkey", "yemen") ~ "Middle East",
+                               country_name %in% c("bahrain", "china", 
+                                                   "india", "pakistan",
+                                                   "south_korea", "uzbekistan") ~ "Asia",
+                               country_name %in% c("estonia", "ukraine") ~ "Europe",
+                               TRUE ~ "Americas")) # Mexico, U.S.
+
+# Poisson Model
+m_chill_poiss <- glm(freq_protests ~ Timing + region + geo_scope + 
+                       actor_id + camp_goals + tactical_choice + st_posture + year, 
+                     data = df_chill_glm, family = poisson)
+summary(m_chill_poiss)
+
+# significant evidence of overdispersion
+dispersiontest(m_chill_poiss)
+
+# Negative Binomial Model 
+m_chill_nb <- glm.nb(freq_protests ~ Timing + region + geo_scope + 
+                       actor_id + camp_goals + tactical_choice + st_posture + year, 
+    data = df_chill_glm)
+summary(m_chill_nb)
+plot(m_chill_nb$fitted.values,m_chill_nb$residuals, xlab = "Fitted Values", ylab = "Pearson Residuals", main = "Residual Plot Shows No Pattern in Residuals")
+```
+
+
+
+```{r}
+# t test for difference between two populations, may be biased
+t.test(x = df_chill_fn$prior, y = df_chill_fn$post)
+
+# bootstrap the mean difference of the two samples
+bootstrapped <- two.boot(df_chill_fn$prior, df_chill_fn$post, mean, 10000)
+
+bootstrapped_mean_diff <- data.frame(bootstrapped$t)
+colnames(bootstrapped_mean_diff) <- "mean_diffs"
+
+ggplot(bootstrapped_mean_diff, aes(x = mean_diffs)) +
+  geom_histogram(color = "green", bins = 20, alpha = 0.8) +
+  geom_vline(xintercept = bootstrapped$t0, size = 1.5) +
+  geom_vline(xintercept = quantile(bootstrapped_mean_diff$mean_diffs, 0.025), size = 1, 
+             linetype = "dashed") +
+  geom_vline(xintercept = quantile(bootstrapped_mean_diff$mean_diffs, 0.975), size = 1,
+             linetype = "dashed") +
+  labs(title = "Statistically Significant Evidence that Means are not the Same",
+       x = "Sample Mean Difference",
+       y = "Bootstrapped Count")
+```
 
 # References
 
