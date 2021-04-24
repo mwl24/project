@@ -27,6 +27,8 @@ library(sure)
 library(simpleboot)
 library(AER)
 library(PResiduals)
+library(kableExtra)
+library(broom)
 ```
 
 # Introduction
@@ -184,6 +186,20 @@ levels(df_ord$camp_goals) <- list(`Regime Change` = c("Regime Change"),
                               `Autonomy` = c("Autonomy", "Anti-occupation"),
                               `Unknown` = c("Unknown"),
                               `Missing` = c("Missing"))
+
+df_ord <- df_ord %>% 
+  dplyr::mutate(region = case_when(country_name %in% c("algeria", "egypt",
+                                                   "kenya", "libya", 
+                                                   "madagascar", "morocco",
+                                                "sierra_leone", "south_sudan",
+                                                "sudan", "tanzania", "tunisia") ~ "Africa",
+                               country_name %in% c("iraq", "jordan", "syria",
+                                                   "turkey", "yemen") ~ "Middle East",
+                               country_name %in% c("bahrain", "china", 
+                                                   "india", "pakistan",
+                                                   "south_korea", "uzbekistan") ~ "Asia",
+                               country_name %in% c("estonia", "ukraine") ~ "Europe",
+                               TRUE ~ "Americas")) # Mexico, U.S.
 ```
 
 <!-- Cumulative Protests Data Cleaning -->
@@ -486,7 +502,7 @@ There are several notable insights from this figure. Regime responses of the hig
 
 ```{r, echo = F, warning = F, message = F}
 ggplot(df_chill_eda, aes(x = freq_protests, color = Timing)) +
-  geom_histogram(aes(y =..density..), binwidth = 100) +
+  geom_histogram(binwidth = 100) +
   geom_density(alpha = 0.2) +
   geom_vline(data = mu, aes(xintercept = grp.mean, color = Timing),
              linetype = "dashed") + 
@@ -565,7 +581,7 @@ sf <- function(y) {
 }
 
 require(Hmisc)
-cat_table <- with(df_ord, summary(as.numeric(st_posture) ~  factor(geo_scope, order = F) + actor_id + camp_goals + tactical_choice,
+cat_table <- with(df_ord, summary(as.numeric(st_posture) ~  factor(geo_scope, order = F) + actor_id + camp_goals + tactical_choice + region,
                                   fun = sf))
 ```
 
@@ -584,26 +600,47 @@ plot(cat_table, which = 1:7, pch = 1:7, xlab = "Difference in Log Odds",
 ```
 
 ```{r, echo = F, warning = F, message = F}
-m_ord <- polr(st_posture ~ factor(geo_scope, order = F) + actor_id + camp_goals + tactical_choice,
-          data = df_clean, 
+m_ord <- polr(st_posture ~ factor(geo_scope, order = F) + actor_id + camp_goals + tactical_choice +
+                region,
+          data = df_ord, 
           #na.action = na.omit,
           Hess = TRUE)
-#summary(m_ord)
+summary(m_ord)
 mod_output_df <- as.data.frame(summary(m_ord)$coefficients)
 mod_output_df$p_value <- pnorm(abs(mod_output_df[, "t value"]), lower.tail = FALSE) * 2
-mod_output_df[, c("Value", "p_value")]
+mod_output_df$CI <- paste("(", as.character(mod_output_df$Value - 1.96 * mod_output_df$`Std. Error`), ", ", as.character(mod_output_df$Value + 1.96 * mod_output_df$`Std. Error`), ")")
+mod_output_df[, c("Value", "Std. Error", "p_value", "CI")]
 1-pchisq(deviance(m_ord), df.residual(m_ord))
 pres <- presid(m_ord)
 ggplot(data.frame(y = pres), aes(sample = y)) +
   stat_qq(distribution = qunif, dparams = list(min = -1, max = 1), alpha  = 0.5)
 
-
+summary(m_ord)
 #resids(m)
 #predict(m_ord, type = "probs")
 #autoplot(resids(m_ord), what = "covariate", x  = predict(m, type = "probs"))
 
 #residuals(m_ord)
 ```
+| Term    | Estimate  | Robust Standard error |p.value| 95% CI
+|---------------|---------------|---------------|---|-----
+| Geographic Scope = Regional|0.717 |0.056 |<0.001|0.607 to 0.827|
+| Geographic Scope = National|-0.425 | 0.070|<0.001|-0.563 to -0.287|
+| Geographic Scope = International Regional|0.448 | 0.163|0.006|0.128 to 0.767|
+| Geographic Scope = Global| 0.001| 0.135|0.994|-0.264 to 0.266|
+| Actor ID = International| 0.403| 0.342|0.239|-0.268 to 1.073|
+| Actor ID = Non-State| 1.539| 0.254|0.506|-0.328 to 0.666|
+| Campaign Goals = Institutional Reform|-0.654| 0.079|<0.001|-0.808 to -0.499|
+| Campaign Goals = Policy Change|-1.236| 0.064|<0.001|-1.361 to -1.111|
+| Campaign Goals = Territorial Secession|-1.161| 0.085|<0.001|-1.328 to -0.993|
+| Campaign Goals = Autonomy|-1.255| 0.094|<0.001|-1.439 to -1.071|
+| Campaign Goals = Unknown|-1.412| 0.071|<0.001|-1.552 to -1.272|
+| Tactical Choice = Mixed Violent & Non-Violent|2.147| 0.042|<0.001|2.066 to 2.229|
+| Tactical Choice = Primary Violent |-0.232| 0.061|<0.001|-0.351 to -0.112|
+| Region = Americas |0.177| 0.087|0.040|0.008 to 0.347|
+| Region = Asia |0.170| 0.055|0.002|0.063 to 0.277|
+| Region = Europe |-0.786| 0.134|<0.001|-1.049 to -0.523|
+| Region = Middle East |0.872| 0.054|<0.001|-0.766 to 0.978|
 
 ## Cumulative Protests
 
@@ -619,12 +656,29 @@ m_wce <- WCE(as.data.frame(df_wce_final), analysis = "Cox", cutoff = 366, nknots
                    "num_protests_day"))
 #m_wce
 #summary(m_wce)
-#plot(m_wce)
-nonusers <- rep(1, 366)
-users <- rep(0, 366)
+plot(m_wce)
+nonusers <- rep(2, 366)
+users <- rep(3, 366)
 # for all models
-#HR.WCE(m_wce, nonusers, users, allres = TRUE)
+HR.WCE(m_wce, nonusers, users, allres = TRUE)
+summary(m_wce)
+m_wce
 ```
+| Comparison    | Hazard Ratio  
+|------------------------|-----
+| Daily Non-Violent Protests vs. Mixed Protests|33.926 |
+| Daily Non-Violent Protests vs. Violent Protests|1150.949 |
+| Daily Mixed Protests vs. Violent Protests|33.926 |
+
+| Term    | Estimate  | Standard Error |p.value| 95% CI
+|--------------------------|-----|-----|---|----------
+| Geographic Scope |1.002 |0.089 |<0.001|0.828 to 1.176|
+| Damage|1.766 | 0.223|<0.001|1.329 to 2.203|
+| Economic Impact|0.628 | 0.155|<0.001|0.324 to 0.932|
+| Fatal Casalties| -1.661| 0.443|<0.001|-2.530 to -0.792|
+| Injuries| -0.097| 0.063|0.1225|-0.220 to 0.0262|
+| Daily Protest Count| 0.727| 0.121|<0.001|0.490 to 0.964|
+
 
 ### PWP Model
 
@@ -634,7 +688,7 @@ pwp1 <- coxph(Surv(Stop, concessions) ~ cluster(id)+ strata(enum) + factor(tacti
                 factor(camp_goals, order = F) * strata(enum), 
             data = df_pwp_final)
 
-#summary(pwp1)
+summary(pwp1)
 
 ggcoxdiagnostics(pwp1, type = "deviance", linear.predictions = T) +
   labs(title = "Deviance Residuals",
@@ -676,8 +730,8 @@ m_chill_poiss <- glm(freq_protests ~ Timing + region + geo_scope +
 dispersiontest(m_chill_poiss)
 
 # Negative Binomial Model 
-m_chill_nb <- glm.nb(freq_protests ~ Timing + region + geo_scope + 
-                       actor_id + camp_goals + tactical_choice + st_posture + year, 
+m_chill_nb <- glm.nb(freq_protests ~ Timing + region + factor(geo_scope, order = F) + 
+                       actor_id + camp_goals + factor(tactical_choice, order = F) + st_posture + year, 
     data = df_chill_glm)
 
 # Negative Binomial Model for mean differences
@@ -694,7 +748,38 @@ m_chill_nb_diff <- glm.nb(abs(diff) ~ region + geo_scope +
 #summary(m_chill_nb)
 plot(m_chill_nb$fitted.values,m_chill_nb$residuals, xlab = "Fitted Values", ylab = "Pearson Residuals", main = "Residual Plot Shows No Pattern in Residuals")
 plot(m_chill_nb_diff$fitted.values,m_chill_nb_diff$residuals, xlab = "Fitted Values", ylab = "Pearson Residuals", main = "Residual Plot Shows No Pattern in Residuals")
+nb_table <- tidy(m_chill_nb)
+nb_table$lower <- nb_table$estimate - 1.96 * nb_table$`std.error`
+nb_table$upper <- nb_table$estimate + 1.96 * nb_table$`std.error`
+knitr::kable(nb_table, digits = 3, caption = "Negative Binomial Model for Chilling Effect", col.names = c('Term','Estimate', 'Standard Error', 'Statistic' , 'P-Value', "Lower", "Upper")) %>%
+  kable_styling(latex_options = "HOLD_position")
 ```
+| Term    | Estimate  | Standard Error |p.value| 95% CI
+|--------------------------|-----|-----|---|----------
+| Timing = Prior|-0.004 |2.696 |0.818|-0.034 to 0.027|
+| Region = Americas|-0.099 | 0.040|0.014|-0.178 to -0.020|
+| Region = Asia|0.244 | 0.023|<0.001|0.198 to 0.289|
+| Region = Europe| -0.637| 0.080|<0.001|-0.795 to -0.480|
+| Region = Middle East| 0.582| 0.021|<0.001|0.541 to 0.622|
+| Geographic Scope = Regional| -0.090| 0.024|<0.001|-0.138 to -0.042|
+| Geographic Scope = National|0.055| 0.034|0.108|-0.012 to 0.121|
+| Geographic Scope = International|0.139| 0.080|0.081|-0.017 to 0.296|
+| Geographic Scope = Global|0.224| 0.107|0.036|0.015 to 0.433|
+| Actor ID = Non-State|-0.041| 0.138|0.767|-0.311 to 0.229|
+| Actor ID = International|-0.468| 0.179|0.009|-0.311 to 0.229|
+| Actor ID = Non-Aligned|-1.035| 0.585|0.077|-2.181 to 0.111|
+| Campaign Goals = Institutional Reform|-0.764| 0.030|<0.001|-0.823 to -0.706|
+| Campaign Goals = Policy Change |-0.767| 0.026|<0.001|-0.819 to -0.715|
+| Campaign Goals = Territorial Secession |-0.474| 0.032|<0.001|-0.537 to -0.411|
+| Campaign Goals = Autonomy|-1.063| 0.032|<0.001|-1.126 to -1.000|
+| Campaign Goals = Anti-Occupation |-0.833| 0.256|0.001|-1.335 to -0.330|
+| Campaign Goals = Unknown|-0.672| 0.025|<0.001|-0.772 to -0.622|
+| Tactics = Mixed |-0.013| 0.030|0.658|-0.072 to -0.046|
+| Tactics = Violent |-0.072| 0.023|0.002|-0.117 to -0.027|
+| Government Response = Short of Killings |0.152| 0.022|<0.001|0.109 to 0.194|
+| Government Response = Intended to Kill |0.052| 0.016|0.001|0.021 to 0.083|
+| Year |0.085| 0.001|<0.001|0.082 to 0.087|
+
 
 ```{r, echo = F, warning = F, message = F}
 # t test for difference between two populations, may be biased

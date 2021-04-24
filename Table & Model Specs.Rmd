@@ -1,0 +1,135 @@
+---
+title: "Table & Model Specs"
+author: "Michael Li"
+date: "March 1, 2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+$$ logit(P(Y \leq j)) = \frac{P(Y \leq j)}{P(Y > j)} = \alpha_j + \beta x, \ for \ j = 1, \ 2 \ ... \ J-1 $$
+
+$$
+\begin{aligned}
+logit(P(Government \ Response \leq j)) &= \beta_{0j} + \beta_1 I(GeoScope_i = Regional) \\
+&+ \beta_2 I(GeoScope_i = National) + \beta_3 I(GeoScope_i = International \ Regional) \\
+&+ \beta_4 I(GeoScope_i = Global) + \beta_5 I(ActorID_i = International) \\
+&+ \beta_6 I(ActorID_i = Non-State) + \beta_7 I(CampGoals_i = Institutional \ Reform) \\
+&+ \beta_8 I(CampGoals_i = Policy \ Change) + \beta_9 I(CampGoals_i = Territorial \ Secession) \\
+&+ \beta_{10} I(CampGoals_i = Autonomy) + \beta_{11} I(CampGoals_i = Unknown) \\
+&+ \beta_{12} I(Tactics_i = Mixed) + \beta_{13} I(Tactics_i = Violent) \\
+&+ \beta_{14} I(Region_i = Americas) + \beta_{15} I(Region_i = Asia) \\
+&+ \beta_{16} I(Region_i = Europe) + \beta_{17} I(Region_i = Middle \ East) \\
+& for \ j = 1, \ 2, \ 3, \ 4, \ 5, \ 6, \ 7
+\end{aligned}
+$$
+We can use the values in this table to help us assess whether the proportional odds assumption is reasonable for our model. (Note, the table is reproduced below, as well as above.) For example, when pared is equal to “no” the difference between the predicted value for apply greater than or equal to two and apply greater than or equal to three is roughly 2 (-0.378 – -2.440 = 2.062). For pared equal to “yes” the difference in predicted values for apply greater than or equal to two and apply greater than or equal to three is also roughly 2 (0.765 – -1.347 = 2.112). This suggests that the parallel slopes assumption is reasonable (these differences are what graph below are plotting). Turning our attention to the predictions with public as a predictor variable, we see that when public is set to “no” the difference in predictions for apply greater than or equal to two, versus apply greater than or equal to three is about 2.14 (-0.204 – -2.345 = 2.141). When public is set to “yes” the difference between the coefficients is about 1.37 (-0.175 – -1.547 = 1.372). The differences in the distance between the two sets of coefficients (2.14 vs. 1.37) may suggest that the parallel slopes assumption does not hold for the predictor public. That would indicate that the effect of attending a public versus private school is different for the transition from “unlikely” to “somewhat likely” and “somewhat likely” to “very likely.”
+
+The plot command below tells R that the object we wish to plot is s. The command which=1:3 is a list of values indicating levels of y should be included in the plot. If your dependent variable had more than three levels you would need to change the 3 to the number of categories (e.g., 4 for a four category variable, even if it is numbered 0, 1, 2, 3). The command pch=1:3 selects the markers to use, and is optional, as are xlab='logit' which labels the x-axis, and main=' ' which sets the main label for the graph to blank. If the proportional odds assumption holds, for each predictor variable, distance between the symbols for each set of categories of the dependent variable, should remain similar. If the proportional odds assumption holds, for each predictor variable, distance between the symbols for each set of categories of the dependent variable, should remain similar. 
+
+
+| Term    | Estimate  | Standard Error |p.value| 95% CI
+|--------------------------|-----|-----|---|----------
+| Geographic Scope = Regional|0.717 |0.056 |<0.001|0.607 to 0.827|
+| Geographic Scope = National|-0.425 | 0.070|<0.001|-0.563 to -0.287|
+| Geographic Scope = International|0.448 | 0.163|0.006|0.128 to 0.767|
+| Geographic Scope = Global| 0.001| 0.135|0.994|-0.264 to 0.266|
+| Actor ID = International| 0.403| 0.342|0.239|-0.268 to 1.073|
+| Actor ID = Non-State| 1.539| 0.254|0.506|-0.328 to 0.666|
+| Campaign Goals = Institutional Reform|-0.654| 0.079|<0.001|-0.808 to -0.499|
+| Campaign Goals = Policy Change|-1.236| 0.064|<0.001|-1.361 to -1.111|
+| Campaign Goals = Territorial Secession|-1.161| 0.085|<0.001|-1.328 to -0.993|
+| Campaign Goals = Autonomy|-1.255| 0.094|<0.001|-1.439 to -1.071|
+| Campaign Goals = Unknown|-1.412| 0.071|<0.001|-1.552 to -1.272|
+| Tactical Choice = Mixed|2.147| 0.042|<0.001|2.066 to 2.229|
+| Tactical Choice = Violent|-0.232| 0.061|<0.001|-0.351 to -0.112|
+| Region = Americas |0.177| 0.087|0.040|0.008 to 0.347|
+| Region = Asia |0.170| 0.055|0.002|0.063 to 0.277|
+| Region = Europe |-0.786| 0.134|<0.001|-1.049 to -0.523|
+| Region = Middle East |0.872| 0.054|<0.001|-0.766 to 0.978|
+
+
+$$
+\begin{aligned}
+WCE(u) &= \sum_{t \leq u} w(u-t)X(t) \\
+X(t) &= Tactics_k \  \text{at time t}
+\end{aligned}
+$$
+
+$$
+\lambda_i(t_{ik}) = \lambda_{i,0}(t)exp[\beta_{WCE}WCE_i(t_{ik}) + \sum_{s = 1}^{p}(\beta_sZ_{s,ik}) + \epsilon_{ik}]
+$$
+$$
+\begin{aligned}
+\lambda_i(t_{ik}) &= \lambda_{i,0}(t)exp[\beta_{WCE}WCE_i(t_{ik}) \\
+&+ \beta_1GeographicScope_{ik} + \beta_2Damage_{ik} \\
+&+ \beta_3EconomicImpact_{ik} + \beta_4FatalCasualties_{ik} \\
+&+ \beta_5Injuries_{ik} + \beta_6DailyProtestCount_{ik} + \epsilon_{ik}]
+\end{aligned}
+$$
+
+| Comparison    | Hazard Ratio  
+|------------------------|-----
+| Daily Non-Violent Protests vs. Mixed Protests|33.926 |
+| Daily Non-Violent Protests vs. Violent Protests|1150.949 |
+| Daily Mixed Protests vs. Violent Protests|33.926 |
+
+| Term    | Estimate  | Standard Error |p.value| 95% CI
+|--------------------------|-----|-----|---|----------
+| Geographic Scope |1.002 |0.089 |<0.001|0.828 to 1.176|
+| Damage|1.766 | 0.223|<0.001|1.329 to 2.203|
+| Economic Impact|0.628 | 0.155|<0.001|0.324 to 0.932|
+| Fatal Casalties| -1.661| 0.443|<0.001|-2.530 to -0.792|
+| Injuries| -0.097| 0.063|0.1225|-0.220 to 0.0262|
+| Daily Protest Count| 0.727| 0.121|<0.001|0.490 to 0.964|
+
+# Chilling Effect
+
+| Term    | Estimate  | Standard Error |p.value| 95% CI
+|--------------------------|-----|-----|---|----------
+| Timing = Prior|-0.004 |2.696 |0.818|-0.034 to 0.027|
+| Region = Americas|-0.099 | 0.040|0.014|-0.178 to -0.020|
+| Region = Asia|0.244 | 0.023|<0.001|0.198 to 0.289|
+| Region = Europe| -0.637| 0.080|<0.001|-0.795 to -0.480|
+| Region = Middle East| 0.582| 0.021|<0.001|0.541 to 0.622|
+| Geographic Scope = Regional| -0.090| 0.024|<0.001|-0.138 to -0.042|
+| Geographic Scope = National|0.055| 0.034|0.108|-0.012 to 0.121|
+| Geographic Scope = International|0.139| 0.080|0.081|-0.017 to 0.296|
+| Geographic Scope = Global|0.224| 0.107|0.036|0.015 to 0.433|
+| Actor ID = Non-State|-0.041| 0.138|0.767|-0.311 to 0.229|
+| Actor ID = International|-0.468| 0.179|0.009|-0.311 to 0.229|
+| Actor ID = Non-Aligned|-1.035| 0.585|0.077|-2.181 to 0.111|
+| Campaign Goals = Institutional Reform|-0.764| 0.030|<0.001|-0.823 to -0.706|
+| Campaign Goals = Policy Change |-0.767| 0.026|<0.001|-0.819 to -0.715|
+| Campaign Goals = Territorial Secession |-0.474| 0.032|<0.001|-0.537 to -0.411|
+| Campaign Goals = Autonomy|-1.063| 0.032|<0.001|-1.126 to -1.000|
+| Campaign Goals = Anti-Occupation |-0.833| 0.256|0.001|-1.335 to -0.330|
+| Campaign Goals = Unknown|-0.672| 0.025|<0.001|-0.772 to -0.622|
+| Tactics = Mixed |-0.013| 0.030|0.658|-0.072 to -0.046|
+| Tactics = Violent |-0.072| 0.023|0.002|-0.117 to -0.027|
+| Government Response = Short of Killings |0.152| 0.022|<0.001|0.109 to 0.194|
+| Government Response = Intended to Kill |0.052| 0.016|0.001|0.021 to 0.083|
+| Year |0.085| 0.001|<0.001|0.082 to 0.087|
+
+$$
+\begin{aligned}
+log(\mu_i) &= \beta_0 + \beta_1I(Timing_i = Prior) + \beta_2I(Region_i = Americas) \\
+&+ \beta_3I(Region_i = Asia) + \beta_4I(Region_i = Europe) + \beta_5I(Region_i = Middle \ East) \\
+&+ \beta_6I(GeographicScope_i = Regional) + \beta_7I(GeographicScope_i = National) \\
+&+ \beta_8I(GeographicScope_i = International) + \beta_9I(GeographicScope_i = Global) \\
+&+ \beta_{10}I(ActorID_i = Non-State) + \beta_{11}I(ActorID_i = International) \\
+&+ \beta_{12}I(ActorID_i = Non-Aligned) + \beta_{13}I(CampaignGoals_i = Institutional \ Reform) \\
+&+ \beta_{14}I(CampaignGoals_i = Policy \ Change) + \beta_{15}I(CampaignGoals_i = Territorial \ Secession) \\
+&+ \beta_{16}I(CampaignGoals_i = Autonomy) + \beta_{17}I(CampaignGoals_i = Anti-Occupation) \\
+&+ \beta_{18}I(CampaignGoals_i = Unknown) + \beta_{19}I(Tactics_i = Mixed) \\
+&+ \beta_{20}I(Tactics_i = Violent) + \beta_{21}I(GovernmentResponse_i = Short \ of \ Killings) \\
+&+ \beta_{22}I(GovernmentResponse_i = Intended \ to \ Kill) + \beta_{23}Year_i + \epsilon_i
+\end{aligned}
+$$
+
+$$\text{Pr}(Y = y_i | \mu_i, \alpha) = \frac{\Gamma(y_i + \alpha^{-1} )}{\Gamma(\alpha^{-1})\Gamma(y_i + 1)} \left(\frac{1}{1 + \alpha\mu_i}\right )^{\alpha^{-1}} \left(\frac{\alpha\mu_i}{1+\alpha\mu_i}\right)^{y_i}$$
+
