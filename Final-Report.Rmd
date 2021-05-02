@@ -33,7 +33,7 @@ library(broom)
 
 # Introduction
 
-At the tail end of former President Trump’s term, the rise of social unrest within the United States became an undeniable reality of American life. The Black Lives Matter movement and the recent violent insurrection of pro-Trump supporters at the Capitol are just two of the campaigns by U.S. civilians of dissatisfaction with U.S. institutions and state actors. The events associated with these protests garnered international attention–– mostly solidarity for the BLM movement and condemnation for the Capitol Hill riot–– but the ugly truths surrounding social movements in other countries, especially autocratic nations where governmental abuses are most egregious, often fly under the radar. Given this, we are interested in investigating social unrest globally and developing a better understanding of the power that grassroots movements hold in challenging governments. It is imperative to recognize that civil resistance is also far from monolithic; oftentimes, the seeds of the most visible campaigns are sown in the form of smaller movements. For example, while media and academia have recognized the political potency of the 18-day occupation of Tahrir Square in 2011 that led to the removal of Egyptian President Hosni Mubarak, there has been scant attention given to the efficacy of the concurrent wave of labor strikes and road-blocking demonstrations in the country at large. Literature on labor strikes and other acts of omission is particularly thin, as this form of protest is less visible than many of its counterparts [1]. As alluded to previously, the extent to which 'quieter' protests are understood in authoriarian regimes is particularly abysmal. Existing studies showing the success of small, tactical movements at acheiving political aims are limited to single-country analyses and only examine first-world countries [2]. The primary goals for this study are as follows:
+At the tail end of former President Trump’s term, the rise of social unrest within the United States became an undeniable reality of American life. The Black Lives Matter movement and the recent violent insurrection of pro-Trump supporters at the Capitol are just two of the campaigns by U.S. civilians of dissatisfaction with U.S. institutions and state actors. The events associated with these protests garnered international attention`--` mostly solidarity for the BLM movement and condemnation for the Capitol Hill riot`––` but the ugly truths surrounding social movements in other countries, especially autocratic nations where governmental abuses are most egregious, often fly under the radar. Given this, we are interested in investigating social unrest globally and developing a better understanding of the power that grassroots movements hold in challenging governments. It is imperative to recognize that civil resistance is also far from monolithic; oftentimes, the seeds of the most visible campaigns are sown in the form of smaller movements. For example, while media and academia have recognized the political potency of the 18-day occupation of Tahrir Square in 2011 that led to the removal of Egyptian President Hosni Mubarak, there has been scant attention given to the efficacy of the concurrent wave of labor strikes and road-blocking demonstrations in the country at large. Literature on labor strikes and other acts of omission is particularly thin, as this form of protest is less visible than many of its counterparts [1]. As alluded to previously, the extent to which 'quieter' protests are understood in authoriarian regimes is particularly abysmal. Existing studies showing the success of small, tactical movements at acheiving political aims are limited to single-country analyses and only examine first-world countries [2]. The primary goals for this study are as follows:
   \begin{itemize}
    \item What are the most important determinants of a successful protest?
    \item What are the cumulative effects of repeated instances of social resistance against a given political target?
@@ -517,87 +517,86 @@ ggplot(df_chill_eda, aes(x = freq_protests, color = Timing)) +
 
 ## Determinants of Protest Success
 
-To model the factors that influence protest success the most, we opted for an ordinal logistic regression model, otherwise known as a cumulative logit model for ordinal responses. Protest success will be simply defined as the response used by the government, with full accomodation denoting the highest level of success and material and/or physical repression resulting in death denoting the lowest. The response variable has seven levels in total. Since we are examining a classification problem with ordered classes, it would not be appropriate to use a multinomial logistic regression model nor other similar models for nominal variables. Other classes of models, including the ordered probit model, are also commonly implemented for classification problems involving an ordinal response variable. In contrast to the ordered probit model, logistic regression affords greater interpretability; the coefficients $\beta$ in logistic regression allow for natural interpretations in terms of log odds. Hence, the logit link function is preferrable since the stated goals focus more on the interpretability of the predictors' relationships with the response. A cumulative logit model for an ordinal response with $J$ levels is similar to a binary logistic model, as the levels 1 to $j$ form a single category and the levels $j+1$ to J form a second category. The log-odds of falling at or below the category comprised of levels 1 to $j$ has a linear relationship with the predictors. The logits of the cumulative probabilities are therefore given by the following form:
+To determine how and if certain factors are associated with individual protest success, we opted for an ordinal logistic regression model, otherwise known as a cumulative logit model for ordinal responses. Protest success will be simply defined as the response used by the government, with full accomodation denoting the lowest level of the outcome and material and/or physical repression resulting in death denoting the highest. As such, lower levels of the outcome signify more successful protests, while higher ones signify less successful ones that elicited a more negative governmental response. The response variable has seven levels in total. Since we are examining a classification problem with ordered classes, it would not be appropriate to use a multinomial logistic regression model nor other similar models for nominal variables. Other classes of models, including the ordered probit model, are also commonly implemented for classification problems involving an ordinal response variable. In contrast to the ordered probit model, logistic regression affords greater interpretability; the coefficients $\beta$ in logistic regression allow for natural interpretations in terms of log odds. Hence, the logit link function is preferrable since the stated goals focus primarily on the interpretability of the predictors' relationships with the response. A cumulative logit model for an ordinal response with $J$ levels is similar to a binary logistic model, as the levels 1 to $j$ form a single category and the levels $j+1$ to J form a second category. The log-odds of falling at or below the category comprised of levels 1 to $j$ has a linear relationship with the predictors. The logits of the cumulative probabilities are therefore given by the following form:
 
-$$ logit(P(Y \leq j)) = \frac{P(Y \leq j)}{P(Y > j)} = \alpha_j + \beta x, \ for \ j = 1, \ 2 \ ... \ J-1 $$
+$$ logit(P(Y \leq j)) = log(\frac{P(Y \leq j)}{P(Y > j)}) = \alpha_j + \beta x, \ for \ j = 1, \ 2 \ ... \ J-1 $$
 
-The key assumption underpinning the ordinal logistic regression model is the proportional odds assumption, which implies that only a single set of coefficients is necessary for each covariate in the model. This is because the assumption states that the coefficients that describe the relationship between the lowest ordinal category versus all higher categories are the same as those that describe the relationship between the next lowest category and all higher categories, and so on. To determine how well each predictor upholds the proportional odds assumption, we created a function to calculate the log odds that governmental response was greater or equal to a given level of governmental response from individual logistic regressions with a single predictor. We then tested the equality of coefficients for a given predictor across its corresponding binary logistic regression models. The differences between the logits for each partition of the dependent variable should be similar for a given predictor regardless of that predictor's level if the proportional odds assumption holds. A visualization indicating the validity of the proportional odds assumption for our predictor set has been included in the appendix.
+The key assumption underpinning the ordinal logistic regression model is the proportional odds assumption, which implies that only a single set of coefficients is necessary for each covariate in the model. This is because the assumption states that the coefficients that describe the relationship between the lowest ordinal category versus all higher categories are the same as those that describe the relationship between the next lowest category and all higher categories, and so on. To determine how well each predictor upholds the proportional odds assumption, we created a function to calculate the log odds that governmental response was greater or equal to a given level of governmental response from individual logistic regressions with a single predictor. We then tested the equality of coefficients for a given predictor across its corresponding binary logistic regression models. The differences between the logits for each partition of the dependent variable should be similar for a given predictor regardless of that predictor's level if the proportional odds assumption holds. A visualization indicating the validity of the proportional odds assumption for our predictor set has been included in the Appendix. For each category of given predictor, the differences between the logits is relatively similar for the included covariates. There are no particularly egregious deviations from the assumption, which verifies our choice of an ordinal logistic regression. A partial proportional odds model, an extension of the cumulative logit model that allows coefficients to vary for each predictor and relaxes the proportional odds assumption, was also considered. We ultimately decided against the use of this more complex model, given that the proportional odds assumption was largely upheld and this model is harder to interpret given that it involves the estimation of $M-1$ coefficients for a predictor with $M$ coefficients. It is also potentially less robust than the cumulative logit model given that it involves coefficient estimation using sparser partitions of the dataset (Lall). 
 
-The base model containing relevant protest-level predictors is specified below:
+The model containing relevant protest-level predictors is specified below:
 
 $$
 \begin{aligned}
-logit(P(Government \ Response \leq j)) &= \beta_{0j} + \beta_1 I(Scope_i = local) \\
-&+ \beta_2 I(Scope_i = subnational) + \beta_3 I(Scope_i = national) \\
-&+ \beta_4 I(Scope_i = international \ regional) + \beta_5 I(Scope_i = global) \\
-&+ \beta_6 I(ActorType_i = state) + \beta_7 I(ActorType_i = non-state) \\
-&+ \beta_8 I(ActorType_i = international) + \beta_9 I(ActorType_i = non-aligned) \\
-&+ \beta_{10} I(ActorType_i = local \ state \ actor) + \beta_{11} I(Goals_i = regime \ change) \\
-&+ \beta_{12} I(Goals_i = institutional \ reform) + \beta_{13} I(Goals_i = policy \ change) \\
-&+ \beta_{14} I(Goals_i = territorial \ secession) + \beta_{15} I(Goals_i = greater \ autonomy) \\
-&+ \beta_{16} I(Goals_i = anti-occupation) + \beta_{17} I(Tactic_i = violent) \\
-&+ \beta_{18} I(Tactic_i = non-violent) +\beta_{19} I(Tactic_i = mixed) \\
-&+ \beta{20} NumPartcipants + \beta_{21}Damage + \beta{22}EconImpact \\
+logit(P(GovernmentResponse_i \leq j)) &= \beta_{0j} + \beta_1 I(GeoScope_i = Regional) \\
+&+ \beta_2 I(GeoScope_i = National) + \beta_3 I(GeoScope_i = International \ Regional) \\
+&+ \beta_4 I(GeoScope_i = Global) + \beta_5 I(ActorID_i = International) \\
+&+ \beta_6 I(ActorID_i = Non-State) + \beta_7 I(CampGoals_i = Institutional \ Reform) \\
+&+ \beta_8 I(CampGoals_i = Policy \ Change) + \beta_9 I(CampGoals_i = Territorial \ Secession) \\
+&+ \beta_{10} I(CampGoals_i = Autonomy) + \beta_{11} I(CampGoals_i = Unknown) \\
+&+ \beta_{12} I(Tactics_i = Mixed) + \beta_{13} I(Tactics_i = Violent) \\
+&+ \beta_{14} I(Region_i = Americas) + \beta_{15} I(Region_i = Asia) \\
+&+ \beta_{16} I(Region_i = Europe) + \beta_{17} I(Region_i = Middle \ East) \\
 & for \ j = 1, \ 2, \ 3, \ 4, \ 5, \ 6, \ 7
 \end{aligned}
 $$
 
 ## Cumulative Protest Effects 
 
-Protests do not occur in a vacuum; oftentimes, individual protests are part of a much larger campaign designed to bring about sweeping institutional change. Given this, we posit that there is likely to be a cumulative effect of protests on governmental response, whereby past protests influence the success of future ones within the same campaign. We will follow the inclusion rule used by Pinckney that approximates the definition of a campaign within the civil resistance literature. A campaign must consist of at least three distinct physical events separated by less than one year, with the events meaningfully linked through common actors or goals [5]. To categorize event-level data into campaigns, we will use the NAVCO 1.3 list of maximalist campaigns. Since NAVCO 3.0 is a disaggregated dataset that does not sort individual protests into campaigns, we will analyze the stated protest goals, target, actors, and timing of the events in our dataset and assign them to the campaigns to which they are most closely aligned. Protests that do not clearly seem to be part of any campaign will be discarded. 
+The success of a campaign was modeled using a survival analysis framework. In this framework, concessions are the event of interest. Although there may be multiple protests that result in concessions across the course of a campaign year, we evaluated the time to the first protest within a campaign that resulted in a concession. 
 
-Once the data has been sorted into campaigns, we will use a weighted cumulative exposure (WCE) model. The WCE model has wide applications within the field of pharmacoepidemiology. In this case, the WCE model is advantageous for three reasons. First, it is able to capture the cumulative effect of past protests on governmental response. Second, it is able to weight the relative importance of past protests depending on their timing. Finally, information concerning the severity of an event can be integrated. We chose this model over recurrent event models such as the Anderson-Gill (AG) model, which suffer from the independence assumption. The AG model assumes that the instantaneous risk of experiencing an outcome of interest at time $t$ remains the same irrespective of whether or not previous events have been experienced. This makes recurrent event independence a poor assumption for this problem. The WCE model is specified as follows:
+Protests do not occur in a vacuum; oftentimes, individual protests are part of a much larger campaign designed to bring about sweeping institutional change. Given this, we posit that there are likely to be cumulative effects of protests on concession obtainment, whereby past protests influence the success of future ones within the same campaign. We followed the inclusion rule used by Pinckney that approximates the definition of a campaign within the civil resistance literature. A campaign must consist of at least three distinct physical events separated by less than one year, with the events meaningfully linked through common actors or goals [5]. To categorize event-level data into campaigns, we used the NAVCO 2.0 and 1.3 list of non-violent and violent campaigns. Since NAVCO 3.0 is a disaggregated dataset that does not sort individual protests into campaigns, we analyzed the stated protest goals, target, country, and timing of the events in our dataset and assigned protests to the campaigns with which they are most closely aligned. Pursuant to the approach used to create the NAVCO 2.0 dataset, protests are then further sorted into 'campaign years' such that protests within campaigns spanning multiple years are grouped by the year in which they occurred (Chenoweth & Lewis). Protests that do not clearly seem to be part of any campaign were discarded.
 
-$$
-WCE(u) = \sum_{t \leq u} w(u-t)X(t)
-$$
-Here $u$ is the current time when governmental response is evaluated, $t \leq u$ indexes times of protests preceding $u$, and $X(t)$ represents the past protest intensity at time $t$. Here intensity will be defined as the number of participants in the protest, as this is a reasonably valid way to measure the strength of a protest.Given that our ultimate reponse variable of interest is quantitative, we will follow the Danieli et al. procedure for implementing the WCE model to assess longitudinal changes in the outcome [6]. This WCE model will be incorporated into a linear effects mixed model, whereby we model governmental response Y, a repeated-over-time outcome, at the $k^{th}$ protest for campaign $i$. The model will thus take the form below:
+Once the individual protests were sorted into their respective campaigns, we used a weighted cumulative exposure (WCE) model, which was integrated into a traditional Cox Proportional Hazards model framework. This is sensible because we are assessing the 'hazard' of acheiving concessions accounting for certain campaign characteristics. The WCE function effectively assigns a weight to a protest in terms of its influence on later protests. The WCE model has broad applications within the field of pharmacoepidemiology, and the Cox model is preferable to the Accelerated Failure Time (AFT) model given the inherent difficulty with choosing an appropriate distribution for the error term in the AFT model. Given the novelty of research on protest success within campaigns, there is a substantial dearth of the necessary prior information and domain knowledge required to specify a distribution for the error distribution. In this case, the WCE extension of a traditional Cox model is advantageous for three reasons. First, it is able to capture the cumulative effect of past protests on concessions. Second, it is able to weight the relative importance of past protests depending on their timing. Finally, information concerning the 'intensity' of each protest event is integrated into the WCE model through an exposure variable. Here intensity is operationalized as the tactics used by the participants in the protest, which is represented by the three-level ordinal variable. The lowest level denotes protests that were primarily non-violent and the highest level denotes protests that were primarily violent; the remaining level denotes protests that employed a mix of violent and non-violent tactics. By accounting for protesters' tactical choices, we can observe the association between protest type and the hazard of obtaining concessions. This variable is of great interest because governments would be expected to respond in different fashions depending on the level of violence that protesters utilize. We chose this model over recurrent event models such as the Anderson-Gill (AG) model, which suffer from the independence assumption. The AG model assumes that the instantaneous risk of experiencing an outcome of interest at time $t$ remains the same irrespective of whether or not previous events have been experienced. This makes recurrent event independence a poor assumption for this problem. The WCE model is specified as follows:
 
 $$
-Y_i(t_{ik}) = \beta_0 + b_{i,0} + \beta_{WCE}WCE_i(t_{ik}) + \sum_{s = 1}^{p}(\beta_sZ_{s,ik}) + \sum_{s = 1}^{r}(b_{i,s}L_{s,ik}) + \epsilon_{ik}
+\begin{aligned}
+WCE(u) &= \sum_{t \leq u} w(u-t)X(t) \\
+X(t) &= Tactics_k \  \text{at time t}
+\end{aligned}
 $$
-$\beta_0$ represents the expected value of the governmental response to a campaign at time $t_{ik}$ assuming that there were no prior protests in the campaign. This is the response that would be expected given that the values of all $p$ fixed effect covariates were set to zero. $b_{i,0} ~ \mathcal{N}(0, \sigma_b^2)$ represents the random intercept for campaign $i$. The fixed effect, $\beta_{WCE}$, represents the expected change in governmental response associated with a unit increase in the WCE metric. $\beta_s$ represents the fixed effect of the covariates $Z_s$, while $b_{i,s}$ represents the random effect of a set of covariates $L_s$ that are included in $Z_s$. These covariates $L_s$ will be the grouping factors that we are seeking to control, namely the geographic scope of protests and the type of actor involved in the protest. We chose to use a mixed effects model because there is reason to believe that observations are not necessarily independent of one another. Protests are likely to 'interact' with one another. For example, an actor conducting multiple protests would be expected to be met with similar governmental responses for each protest. This model allows us to therefore capture variance in the dependent governmental response variable due to relevant clusters.
+
+Here $u$ is the current time when concession acquisition is evaluated, $t \leq u$ indexes the times of protests preceding $u$, $k$ indexes individual protests, and $X(t)$ represents the past protest tactical intensity at time $t$. Since protests are sorted into campaign years, we represent time as the number of days to protest that have elapsed since the beginning of the year. Given that our ultimate reponse variable of interest is binary, we will follow the Danieli et al. procedure for implementing the WCE model to assess longitudinal changes in the outcome [6]. This WCE model will be incorporated into a Cox model as mentioned previously, whereby we model concessions, a repeated-over-time outcome, at the $k^{th}$ protest for campaign $i$. The model will thus take the form below:
+
+$$
+\begin{aligned}
+\lambda_i(t) &= \lambda_{0}(t)exp[\beta_{WCE}WCE_i(t_{ik}) \\
+&+ \beta_1GeographicScope_{ik} + \beta_2Damage_{ik} \\
+&+ \beta_3EconomicImpact_{ik} + \beta_4FatalCasualties_{ik} \\
+&+ \beta_5Injuries_{ik} + \beta_6DailyProtestCount_{ik} + \epsilon_{ik}]
+\end{aligned}
+$$
+
+As is typical for a Cox Proportional Hazards model, $\lambda_{i,0}$ is not estimated. The $\beta$ coefficients independently consider the time-varying covariates shown in this model. $\lambda_i(t_{ik})$ gives the instantaneous rate of acheiving of a successful protest given that no previous protests have been successful at time $t$. 
 
 ## Chilling Effect
 
-To determine whether or not a chilling effect stemming from severe governmental responses exists, we will be examining the frequency of protests a year prior to and following such a response. A severe response will be defined as any governmental response that is of level five, which corresponds to non-material and non-physical repression, or higher. A two proportions Z-test will be used to examine if the difference in protest frequencies is statistically significant. This hypothesis test is effective in comparing population proportion differences between two groups, and it is chosen over the Fisher-exact test because of the sufficiently large sample size. 
+To determine whether or not a chilling effect stemming from severe governmental responses exists, we examined the frequency of protests within a country a year prior to and following such a response. A severe response is defined as any governmental response that is of level five, which corresponds to non-material and non-physical repression, or higher. As our outcome of interest, the frequency of protests, is a discrete count, we decided to use a count model. We initially considered using a Poisson regression model, but found statistically significant evidence for overdispersion, violating Poisson regression's assumption of equal conditional mean and variance and potentially resulting in understated standard error estimates. The overdispersion test of the Poisson model in the Appendix gave us a value of 199.540 at a p-value that was well below the $\alpha = 0.05$ level, allowing us to address the null hypothesis of equidispersion. We therefore implemented a Negative Binomial regression model that is better equipped to deal with overdispersion given that the negative binomial distribution has an additional parameter that adjusts variance independently from the mean. Zero-inflated models were also considered to also account for overdispersion, but these approaches were deemed unecessary given that only 28 protest frequency counts out of 10,314 were equal to zero. We also considered constructing a Negative Binomial model with the difference between prior- and post-frequencies as the outcome, but this approach was not ideal given that the outcome variable for count models is constrained to the set of non-negative integers. Consequently, the implementation of this model would have required evaluating the absolute differences between frequencies, resulting in substantive information loss since we are interested in the directionality of these differences. With regard to the validity of our Negative Binomial model for the research question, the main assumptions are linearity of the model parameters with the response and independence among observations. While there is invariably going to be some dependency among the pairs of observations corresponding to the before and after frequencies of protests following the same protest event, model diagnostics verify that residuals do not show any particularly alarming systematic patterning. The linearity assumption is similarly upheld. The Negative Binomial model is specified as follows: 
+
+$$
+\begin{aligned}
+log(\mu_i) &= \beta_0 + \beta_1I(Timing_i = Prior) + \beta_2I(Region_i = Americas) \\
+&+ \beta_3I(Region_i = Asia) + \beta_4I(Region_i = Europe) + \beta_5I(Region_i = Middle \ East) \\
+&+ \beta_6I(GeographicScope_i = Regional) + \beta_7I(GeographicScope_i = National) \\
+&+ \beta_8I(GeographicScope_i = International) + \beta_9I(GeographicScope_i = Global) \\
+&+ \beta_{10}I(ActorID_i = Non-State) + \beta_{11}I(ActorID_i = International) \\
+&+ \beta_{12}I(ActorID_i = Non-Aligned) + \beta_{13}I(CampaignGoals_i = Institutional \ Reform) \\
+&+ \beta_{14}I(CampaignGoals_i = Policy \ Change) + \beta_{15}I(CampaignGoals_i = Territorial \ Secession) \\
+&+ \beta_{16}I(CampaignGoals_i = Autonomy) + \beta_{17}I(CampaignGoals_i = Anti-Occupation) \\
+&+ \beta_{18}I(CampaignGoals_i = Unknown) + \beta_{19}I(Tactics_i = Mixed) \\
+&+ \beta_{20}I(Tactics_i = Violent) + \beta_{21}I(GovernmentResponse_i = Short \ of \ Killings) \\
+&+ \beta_{22}I(GovernmentResponse_i = Intended \ to \ Kill) + \beta_{23}Year_i + \epsilon_i
+\end{aligned}
+$$
+
+$$\text{Pr}(ProtestFrequency = ProtestFrequency_i | \mu_i, \alpha) = \frac{\Gamma(ProtestFrequency_i + \alpha^{-1} )}{\Gamma(\alpha^{-1})\Gamma(ProtestFrequency_i + 1)} \left(\frac{1}{1 + \alpha\mu_i}\right )^{\alpha^{-1}} \left(\frac{\alpha\mu_i}{1+\alpha\mu_i}\right)^{ProtestFrequency_i}$$
+
+For the Negative Binomial model, $i$ represents each frequency observation, $\alpha$ is the dispersion parameter, and $\mu_i$ is the mean frequency for a given observation. The covariate of interest is timing, which is an indicator variable that denotes whether the count was observed before or after the repressive event. Additional covariates corresponding to the features of the protest that triggered the repressive event and the severity of repression itself were included to control for confounding effects. 
+
+For sensitivity analysis, we also evaluated the difference between prior- and post-repression protest frequencies using more simplistic approaches that do not control for confounders to assess potential discrepancies in findings. A Welch's T-test was used to determine if the difference between protest frequencies is statistically significant. This method is more robust than the frequently used Student's t-test that assumes equal variances. Bootrstrapping was then implemented to randomly sample from our dataset and obtain more robust confidence intervals with reduced bias. This is due to the fact that the distribution of a large number of repeatedly estimated mean differences is symptotically equivalent to the sampling distribution of the difference. 
 
 # Results 
 
 ## Protest Success
-
-```{r, echo = F, warning = F, message = F}
-#https://stats.idre.ucla.edu/r/dae/ordinal-logistic-regression/
-
-# define function to find log odds of being greater than or equal to given response level
-sf <- function(y) {
-  c('Y>=1' = qlogis(mean(y >= 1)), # y >= 1 gives 0/1 vector and taking mean gives probability of being >= 1
-    'Y>=2' = qlogis(mean(y >= 2)), # convert probability of being greater than the response to log odds
-    'Y>=3' = qlogis(mean(y >= 3)),
-    'Y>=4' = qlogis(mean(y >= 4)),
-    'Y>=5' = qlogis(mean(y >= 5)),
-    'Y>=6' = qlogis(mean(y >= 6)),
-    'Y>=7' = qlogis(mean(y >= 7)))
-}
-
-require(Hmisc)
-cat_table <- with(df_ord, summary(as.numeric(st_posture) ~  factor(geo_scope, order = F) + actor_id + camp_goals + tactical_choice + region,
-                                  fun = sf))
-```
-
-```{r echo = F, warning = F, message = F, fig.align='center', fig.height = 18, fig.width = 9}
-# this allows us to see the logits relative to the logit for y >= 2
-cat_table[,8] <- cat_table[,8] - cat_table[,3]
-cat_table[,7] <- cat_table[,7] - cat_table[,3]
-cat_table[,6] <- cat_table[,6] - cat_table[,3]
-cat_table[,5] <- cat_table[,5] - cat_table[,3]
-cat_table[,4] <- cat_table[,4] - cat_table[,3]
-cat_table[,3] <- cat_table[,3] - cat_table[,3]
-
-plot(cat_table, which = 1:7, pch = 1:7, xlab = "Difference in Log Odds", 
-     main = "Figure 3: Proportional Odds Assumption Satisfied by Data", 
-     xlim = range(cat_table[,3:8]))
-```
 
 ```{r, echo = F, warning = F, message = F}
 m_ord <- polr(st_posture ~ factor(geo_scope, order = F) + actor_id + camp_goals + tactical_choice +
@@ -605,28 +604,30 @@ m_ord <- polr(st_posture ~ factor(geo_scope, order = F) + actor_id + camp_goals 
           data = df_ord, 
           #na.action = na.omit,
           Hess = TRUE)
-summary(m_ord)
+#summary(m_ord)
 mod_output_df <- as.data.frame(summary(m_ord)$coefficients)
 mod_output_df$p_value <- pnorm(abs(mod_output_df[, "t value"]), lower.tail = FALSE) * 2
 mod_output_df$CI <- paste("(", as.character(mod_output_df$Value - 1.96 * mod_output_df$`Std. Error`), ", ", as.character(mod_output_df$Value + 1.96 * mod_output_df$`Std. Error`), ")")
-mod_output_df[, c("Value", "Std. Error", "p_value", "CI")]
-1-pchisq(deviance(m_ord), df.residual(m_ord))
-pres <- presid(m_ord)
-ggplot(data.frame(y = pres), aes(sample = y)) +
-  stat_qq(distribution = qunif, dparams = list(min = -1, max = 1), alpha  = 0.5)
+#mod_output_df[, c("Value", "Std. Error", "p_value", "CI")]
 
-summary(m_ord)
+
+#1-pchisq(deviance(m_ord), df.residual(m_ord))
+pres <- presid(m_ord)
+#ggplot(data.frame(y = pres), aes(sample = y)) +
+#  stat_qq(distribution = qunif, dparams = list(min = -1, max = 1), alpha  = 0.5)
+
+#summary(m_ord)
 #resids(m)
 #predict(m_ord, type = "probs")
 #autoplot(resids(m_ord), what = "covariate", x  = predict(m, type = "probs"))
 
 #residuals(m_ord)
 ```
-| Term    | Estimate  | Robust Standard error |p.value| 95% CI
-|---------------|---------------|---------------|---|-----
+| Term    | Estimate  | Standard Error |p.value| 95% CI
+|--------------------------|-----|-----|---|----------
 | Geographic Scope = Regional|0.717 |0.056 |<0.001|0.607 to 0.827|
 | Geographic Scope = National|-0.425 | 0.070|<0.001|-0.563 to -0.287|
-| Geographic Scope = International Regional|0.448 | 0.163|0.006|0.128 to 0.767|
+| Geographic Scope = International|0.448 | 0.163|0.006|0.128 to 0.767|
 | Geographic Scope = Global| 0.001| 0.135|0.994|-0.264 to 0.266|
 | Actor ID = International| 0.403| 0.342|0.239|-0.268 to 1.073|
 | Actor ID = Non-State| 1.539| 0.254|0.506|-0.328 to 0.666|
@@ -635,12 +636,31 @@ summary(m_ord)
 | Campaign Goals = Territorial Secession|-1.161| 0.085|<0.001|-1.328 to -0.993|
 | Campaign Goals = Autonomy|-1.255| 0.094|<0.001|-1.439 to -1.071|
 | Campaign Goals = Unknown|-1.412| 0.071|<0.001|-1.552 to -1.272|
-| Tactical Choice = Mixed Violent & Non-Violent|2.147| 0.042|<0.001|2.066 to 2.229|
-| Tactical Choice = Primary Violent |-0.232| 0.061|<0.001|-0.351 to -0.112|
+| Tactical Choice = Mixed|2.147| 0.042|<0.001|2.066 to 2.229|
+| Tactical Choice = Violent|-0.232| 0.061|<0.001|-0.351 to -0.112|
 | Region = Americas |0.177| 0.087|0.040|0.008 to 0.347|
 | Region = Asia |0.170| 0.055|0.002|0.063 to 0.277|
 | Region = Europe |-0.786| 0.134|<0.001|-1.049 to -0.523|
 | Region = Middle East |0.872| 0.054|<0.001|-0.766 to 0.978|
+
+The ordinal logistic regression model had the above coefficient estimates and measures of uncertainty. At the $\alpha = 0.05$ significance threshold, the coefficient point estimates are statistically significant for the following variables: regional scope, national scope, international scope, all campaign goal variables, all tactical choice variables, and all region variables. Despite correlative evidence from reviewing relevant literature, the identity of the actors involved in a protest was not statistically significant.  
+
+# Protest Success
+
+There were several statistically significant relationships that we observed given our results. Beginning by looking at the geographic scope indicator variables, the odds of receiving a less repressive and, equivalently, a more conciliatory governmental response for protests that were regional in nature were expected to be approximately 2.048 times those for local protests, holding all else constant. A similar multiplicative odds increase of 1.565 was observed for international protests compared to local protests, while a multiplicative odds decrease of 0.654 was observed for national protests. 
+
+<!--> National protests without international backing less successful beceause viewed as significant threat to regime, regional protests aren't and are likely smaller (and less ambitious?), international protests are more successful because they of diplomacy issues-- once international actors like other countries get involved, govs are more likely to acquiesce to uphold image and relations
+Make sure comparison is always to local protests<-->
+
+Somewhat counterintuitively, we observed negative effect sizes for all of the point estimates of coefficients corresponding to campaign goal variables. For protests with institutional reform, policy change, territorial secession, autonomy, and unknown goals, the odds of being a recipient of a more conciliatory government response, holding other predictors constant, were expected to be approximately 0.520, 0.291, 0.313, 0.285, and 0.244 times those for protests with regime change goals, respectively.
+
+<!--> Compared to regime change protests, all other protests were less likely to get a conciliatory response (lower success). This could perhaps be because regime change protests are more well-organized and larger, making them more likely to force a government's hand<-->
+
+With regard to tactical choice, we observed that protests utilizing both violence and non-violence were associated with a much higher odds of being successful than primarily non-violent protests, while primarily violent protests displayed the opposite relationship with non-violent protests. Holding all else constant, mixed protests were expected to have 8.560 times greater odds of a more conciliatory response when compared to non-violent protests. On the other hand, violent protests were expected to have 0.79 times lower odds of a more conciliatory response when compared to non-violent protests, holding other variables constant. 
+
+<!--> Pure violence is not effective, but mixed approaches that use both civil and violent resistance are more effective. This suggests that when employed right, some use of violence along with civil tactics can be effective<-->
+
+Finally, we examined the associations between our region covariates and the response. For protests occurring in the Americas, Asia, Europe, and the Middle East, the odds of being a recipient of a more conciliatory government response, holding other predictors constant, were expected to be approximately 1.194, 1.185, 0.456, and 2.392 times those for protests occurring in Africa, respectively. Given that the United States and Mexico are governed by democratic republic systems and the former is a highly developed country, and most of the Asian countries analyzed have undergone significant political liberalization as a result of globalization, it is reasonable that these the Americas and Asia are expected to have elevated odds of protest efficacy than Africa, as many African countries are less integrated into global economic and political affairs and are led by autocratic regimes that are generally less concerned with the concerns of their citizenry. As many governments in the Middle East are also authoritarian, it may seem puzzling that protests within this region have a much higher expected odds of a conciliatory response than those in Africa. We posit that this may be due to the greater incidence of organized militant groups in the Middle East that are capable of forcing governments to acquiesce to demands, or the potential skewing of the results due to revolutions such as the Arab Spring from 2010 to 2012. Finally, the observation that protests based in Europe appear even less efficacious than those in Africa likely stems from the fact that only protests within Ukraine and Estonia are analyzed for the European region. Although relatively democratic, these Baltic states were formerly part of the USSR and maintain tight control over their populations which is designed to unite citizens against the ever-looming threat of Russian annexation. An interesting vector of consideration stems from the idea of information flow, with both countries having state-owned mass media and Ukraine being ranked within the bottom half of all countries in terms of the 2017 World Press Freedom Index (RSF). Thus, even as these countries are more democratized than of their African counterparts, their governments may be better equipped to quash protests. 
 
 ## Cumulative Protests
 
@@ -656,19 +676,25 @@ m_wce <- WCE(as.data.frame(df_wce_final), analysis = "Cox", cutoff = 366, nknots
                    "num_protests_day"))
 #m_wce
 #summary(m_wce)
-plot(m_wce)
-nonusers <- rep(2, 366)
-users <- rep(3, 366)
+#plot(m_wce)
+
+# Scenario Analysis
+nonvio <- rep(1, 366)
+mixed <- rep(2, 366)
 # for all models
-HR.WCE(m_wce, nonusers, users, allres = TRUE)
-summary(m_wce)
-m_wce
+#HR.WCE(m_wce, mixed, vio, allres = TRUE)
+
+vio <- rep(3, 366)
+# for all models
+#HR.WCE(m_wce, nonvio, vio, allres = TRUE)
 ```
 | Comparison    | Hazard Ratio  
 |------------------------|-----
 | Daily Non-Violent Protests vs. Mixed Protests|33.926 |
 | Daily Non-Violent Protests vs. Violent Protests|1150.949 |
 | Daily Mixed Protests vs. Violent Protests|33.926 |
+
+To evaluate the relationship between protest tactics and the hazard of a protest within a campaign year resulting in a concession, we conducted a scenario analysis. After fitting the WCE Cox proportional hazards model, three scenarios were simulated. Each scenario is represented by a vector of tactical choice values in which each element of the vector denotes the tactics that were used on a given day within a hypothetical campaign year. The first assumes that a primarily non-violent protest occurred every single day during the 366 potential days in a given year. The second and third scenarios respectively assume daily mixed and primarily violent protests in a similar fashion. This method was utilized because it offers the clearest insight into how the cumulative effects of protests differ with respect to the tactics used in the protests. The hazard ratios in the table above signify the relative risk of one campaign year obtaining a concession at time $t = 366$ in comparison to another campaign year (Sylvestre). The scenario that is listed first within each row corresponds to the numerator of the appropriate hazard ratio, while the second scenario corresponds to the denominator. An interpretation of the findings is provided in the discussion section. 
 
 | Term    | Estimate  | Standard Error |p.value| 95% CI
 |--------------------------|-----|-----|---|----------
@@ -679,8 +705,15 @@ m_wce
 | Injuries| -0.097| 0.063|0.1225|-0.220 to 0.0262|
 | Daily Protest Count| 0.727| 0.121|<0.001|0.490 to 0.964|
 
+The WCE Cox model had the above coefficient estimates and measures of uncertainty for the other covariates. At the $\alpha = 0.05$ significance threshold, the coefficient point estimates are statistically significant for every predictor with the exception of injuries. Caution should be exercised when interpreting any significant effect sizes, as some variables that are truly ordinal are treated as continuous due to the constraints of the current implementation of the WCE package. We will articulate how to interpret these results in the discussion.
 
-### PWP Model
+# Cumulative Protests
+
+When analyzing the hazard ratios of the different scenarios outlined in the methodology section, it becomes apparent that campaigns with consistent non-violent protests are associated with the highest hazard of experiencing a concession. Holding other predictors constant, campaign years consisting of daily non-violent protests were expected to have a 33.926 times higher hazard at the end of the year than campaign years consisting of daily mixed protests. Holding other predictors constant, campaign years consisting of daily non-violent protests were expected to have a 1150.949 times higher hazard at the end of the year than campaign years consisting of daily violent protests. Holding other predictors constant, campaign years consisting of daily non-violent protests were expected to have a 33.926 times higher hazard at the end of the year than campaign years consisting of daily mixed protests. These findings seem to convey that within the context of a campaign, repeated non-violent protests have much higher efficacy for eliciting concessions on the part of a governmental entity than both repeated mixed and violent protests. This offers an interesting contrast to the results obtained from the previous research question, as we observed statistically significant evidence that protests with mixed tactics were expected to have considerably higher odds of acheiving a more conciliatory response than protests with non-violent tactics. The discrepancy can ostensibly be reconciled by the different units of observation in each research question, and the fact that cumulative protest effects are accounted for in this cumulative analysis. While a mixed tactics that utilizes some form of violence may be advantageous for acheiving success in a single, isolated protest, governments appear to be more receptive to campaigns that capitalize primarily on civil resistance. This may be a result of threat perception. When faced with challenges to their power, governments tend to scale their use of coercion and repression to the perceived size of the threat, with greater repression being relied on when threats are seen as large (Ferrara). The fact that the hazard ratio comparing non-violent protests to violent ones is inordinately large offers confirmatory evidence of this interpretation, as recurring instances of primarily violent protests are very likely to be perceived as substantial threats to the regime.
+
+Examining the additional time-varying covariates included in the model, we also notice several intriguing relationships. Holding other variables constant, a one unit increase in fatal protest casualties at time or day $t$ within a campaign year was associated with a 0.190 multiplicative decrease in the hazard. Similarly, a one unit increase in the number of protest injuries    
+
+<!--> PWP Model <-->
 
 ```{r, echo = F, warning = F, message = F}
 pwp1 <- coxph(Surv(Stop, concessions) ~ cluster(id)+ strata(enum) + factor(tactical_choice, order = F) * strata(enum) 
@@ -688,18 +721,20 @@ pwp1 <- coxph(Surv(Stop, concessions) ~ cluster(id)+ strata(enum) + factor(tacti
                 factor(camp_goals, order = F) * strata(enum), 
             data = df_pwp_final)
 
-summary(pwp1)
+# summary(pwp1)
 
-ggcoxdiagnostics(pwp1, type = "deviance", linear.predictions = T) +
-  labs(title = "Deviance Residuals",
-         x = "Linear Predictions",
-         y = "Residuals") + 
-  xlim(c(-5,5))
+# Residual plots
 
-ggcoxdiagnostics(pwp1, type = "deviance", linear.predictions = F) +
-  labs(title = "Deviance Residuals",
-         x = "Linear Predictions",
-         y = "Residuals")
+# ggcoxdiagnostics(pwp1, type = "deviance", linear.predictions = T) +
+#   labs(title = "Deviance Residuals",
+#          x = "Linear Predictions",
+#          y = "Residuals") + 
+#   xlim(c(-5,5))
+# 
+# ggcoxdiagnostics(pwp1, type = "deviance", linear.predictions = F) +
+#   labs(title = "Deviance Residuals",
+#          x = "Linear Predictions",
+#          y = "Residuals")
 ```
 
 ## Chilling Effect
@@ -809,10 +844,64 @@ ggplot(bootstrapped_mean_diff, aes(x = mean_diffs)) +
 
 [2] Huet-Vaughn E. "Quiet Riot: Estimating a Causal Effect of Protest Violence." Working Paper. 1-41.
 
-[3] Chenowth E.
+[3] Chenoweth E.
 
 [4] McAdam D. "Tactical Innovation and the Pace of Insurgency." American Sociological Association. American Sociological Review. 48 (6): 735-754.
 
 [5]
 
 [6] Danieli C, Sheppard T, Costello R, Dixon W, Abrahamowicz M. "Modeling of cumulative effects of time-varying drug exposures on within-subject changes in a continuous outcome." SSMR. 29(9): 2554-2568.
+
+Lall, R. "The Application of Ordinal Regression Models in Quality of Life Scales used in Gerontology." University of Sheffield. 1-315.
+
+Chenoweth E, Lewis O (2013). "Nonviolent and Violent Campaigns and Outcomes (NAVCO) Data Project." Journal of Peace Research. 1-19. 
+
+(RSF). https://rsf.org/en/ranking/2017
+
+Sylvestre M, Beauchamp M, Abrahamowicz M. "WCE package: weighted cumulative exposure models." CHUM Research Centre. 1-10.
+
+Ferrara F (2003). "Why Regimes Create Disorder: Hobbes's Dilemma during a Rangoon Summer." The Journal of Conflict Resolution. 47(3): 302-335.
+
+
+# Appendix
+
+<!-- Ordinal Regression Prop Odds -->
+
+```{r, echo = F, warning = F, message = F}
+#https://stats.idre.ucla.edu/r/dae/ordinal-logistic-regression/
+
+# define function to find log odds of being greater than or equal to given response level
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)), # y >= 1 gives 0/1 vector and taking mean gives probability of being >= 1
+    'Y>=2' = qlogis(mean(y >= 2)), # convert probability of being greater than the response to log odds
+    'Y>=3' = qlogis(mean(y >= 3)),
+    'Y>=4' = qlogis(mean(y >= 4)),
+    'Y>=5' = qlogis(mean(y >= 5)),
+    'Y>=6' = qlogis(mean(y >= 6)),
+    'Y>=7' = qlogis(mean(y >= 7)))
+}
+
+require(Hmisc)
+cat_table <- with(df_ord, summary(as.numeric(st_posture) ~  factor(geo_scope, order = F) + actor_id + camp_goals + tactical_choice + region,
+                                  fun = sf))
+```
+
+```{r echo = F, warning = F, message = F, fig.align='center', fig.height = 18, fig.width = 9}
+# this allows us to see the logits relative to the logit for y >= 2
+cat_table[,8] <- cat_table[,8] - cat_table[,3]
+cat_table[,7] <- cat_table[,7] - cat_table[,3]
+cat_table[,6] <- cat_table[,6] - cat_table[,3]
+cat_table[,5] <- cat_table[,5] - cat_table[,3]
+cat_table[,4] <- cat_table[,4] - cat_table[,3]
+cat_table[,3] <- cat_table[,3] - cat_table[,3]
+
+plot(cat_table, which = 1:7, pch = 1:7, xlab = "Difference in Log Odds", 
+     main = "Figure 3: Proportional Odds Assumption Satisfied by Data", 
+     xlim = range(cat_table[,3:8]))
+```
+
+<!-- Negative Binomial -->
+```{r}
+scatter.smooth(1:length(fitted(m_chill_nb)), rstandard(m_chill_nb, type = 'deviance'), col = 'gray')
+```
+
