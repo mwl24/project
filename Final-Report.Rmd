@@ -8,7 +8,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 ```
 
 ```{r, echo = F, warning = F, message = F}
@@ -33,18 +33,18 @@ library(broom)
 
 # Introduction
 
-At the tail end of former President Trump’s term, the rise of social unrest within the United States became an undeniable reality of American life. The Black Lives Matter movement and the recent violent insurrection of pro-Trump supporters at the Capitol are just two of the campaigns by U.S. civilians of dissatisfaction with U.S. institutions and state actors. The events associated with these protests garnered international attention`--` mostly solidarity for the BLM movement and condemnation for the Capitol Hill riot`––` but the ugly truths surrounding social movements in other countries, especially autocratic nations where governmental abuses are most egregious, often fly under the radar. Given this, we are interested in investigating social unrest globally and developing a better understanding of the power that grassroots movements hold in challenging governments. It is imperative to recognize that civil resistance is also far from monolithic; oftentimes, the seeds of the most visible campaigns are sown in the form of smaller movements. For example, while media and academia have recognized the political potency of the 18-day occupation of Tahrir Square in 2011 that led to the removal of Egyptian President Hosni Mubarak, there has been scant attention given to the efficacy of the concurrent wave of labor strikes and road-blocking demonstrations in the country at large. Literature on labor strikes and other acts of omission is particularly thin, as this form of protest is less visible than many of its counterparts [1]. As alluded to previously, the extent to which 'quieter' protests are understood in authoriarian regimes is particularly abysmal. Existing studies showing the success of small, tactical movements at acheiving political aims are limited to single-country analyses and only examine first-world countries [2]. The primary goals for this study are as follows:
+At the tail end of former President Trump’s term, the rise of social unrest within the United States became an undeniable reality of American life. The Black Lives Matter movement and the recent violent insurrection of pro-Trump supporters at the Capitol are just two of the campaigns by U.S. civilians of dissatisfaction with U.S. institutions and state actors. The events associated with these protests garnered international attention`--` mostly solidarity for the BLM movement and condemnation for the Capitol Hill riot`––` but the ugly truths surrounding social movements in other countries, especially autocratic nations where governmental abuses are most egregious, often fly under the radar [1]. Given this, we are interested in investigating social unrest globally and developing a better understanding of the power that grassroots movements hold in challenging governments. It is imperative to recognize that civil resistance is also far from monolithic; oftentimes, the seeds of the most visible campaigns are sown in the form of smaller movements. For example, while media and academia have recognized the political potency of the 18-day occupation of Tahrir Square in 2011 that led to the removal of Egyptian President Hosni Mubarak, there has been scant attention given [2]. Existing studies showing the success of tactical movements at acheiving political aims are limited to single-country analyses and only examine first-world countries [3]. Given that there is a gap in the literature surrounding autocratic regimes and the factors that influence success in these contexts, we will seek to provide a more comprehensive picture of global protests. The primary goals for this study are as follows:
   \begin{itemize}
    \item What are the most important determinants of a successful protest?
-   \item What are the cumulative effects of repeated instances of social resistance against a given political target?
+   \item What protest tactics are effective when considering the cumulative effects of protests within their larger campaigns or movements?
    \item Does the use of violence by a government lead to a 'chilling effect', whereby future protests are deterred?
    \end{itemize} 
    
 # Data
 
-This paper uses the NAVCO 3.0 dataset assembled as part of the Nonviolent and Violent Campaigns and Outcomes (NAVCO) data project, the first and only project to collect systematic, global data on both violent insurgencies and nonviolent civil resistance campaigns [3]. This was done by manually coding variables of interest for events according to news reports. Coders used news wire reports from Agence France Presse (AFP), the world's oldest and a leading international news agency, to access relevant articles. After binning the articles according to country and time period of interest, coders followed a rigorous set of instructions specified by Chenoweth, Pinckney, and Lewis to identify relevant events and appropriately translate text in articles to values usable for data analysis.
+This paper uses the NAVCO 3.0 dataset assembled as part of the Nonviolent and Violent Campaigns and Outcomes (NAVCO) data project, the first and only project to collect systematic, global data on both violent insurgencies and nonviolent civil resistance campaigns [3]. This was done by manually coding variables of interest for events according to news reports. Coders used news wire reports from Agence France Presse (AFP), the world's oldest and a leading international news agency, to access relevant articles. After binning the articles according to country and time period of interest, coders followed a rigorous set of instructions specified by Chenoweth, Pinckney, and Lewis to identify relevant events and appropriately translate text in articles to values usable for data analysis. The dataset contains data from 22 countries across the world, in both developed and developing countries. For the research question concerning campaigns, the NAVCO 1.3 and 2.0 datasets that contain information on the campaign level will be used to sort individual protests into the larger movements in which they operate.
 
-There are two reasonable choices for response variables: (i) the regime response to campaign activity (ii) the number of fatalities or injuries caused due to campaign activity. This paper will primarily focus on the former response variable, as the number of casualties is intrinsically tied to the number of participants involved in the campaign and is only tangentially related to efficacy. The predictor variables fall into seven main categories: location, date, perpetrator characteristics, perpetrator goals, perpetrator methods, target characteristics, and economic impact. We will focus heavily on the subset of predictors related to the methods that perpetrators utilize. Existing literature suggests that tactical innovation and the use of variant methods is critical for the success of civil resistance [4]. However, it is unclear which innovations are effective, warranting an analysis of the comparative utility of different forms of protest. For the cumulative effects research goal, we created a variable to track the number and magnitude of events in the three months prior to a major concession. The designation of a three month time frame was chosen based on the notion that social resistance movements rarely generate continued attention beyond several months following their conclusions.
+For the first research question concerning general protest success, this paper will utilize governmental response as the outcome, an ordinal variable with seven levels to indicate the type of response that the government used when responding to a protest. Lower levels correspond to more conciliatory responses, while higher levels correspond to the greater use of violence. The second research question will use a newly created concessions predictor, a binary variable that indicates whether or not the government made any form of concessions to a protest. This was done by recoding the governmental response variable such that the lower three levels, which designate that the government made some form of accomodation to protesters, were recorded as a one, with all other levels of the governmental response variable recorded as zero. The final research question uses protest frequency as the response, which is operationalized as the number of protests within a certain country occurring within a year either before or after a repressive event, as fears over governmental backlash may last many months at a time. We also created a timing variable, which serves as an indicator denoting whether these observed frequencies occurred before or after the event. The predictor variables fall into seven main categories: location, date, perpetrator characteristics, perpetrator goals, perpetrator methods, target characteristics, and economic impact. For all three models, we will focus heavily on the subset of predictors related to the methods that perpetrators utilize, although the covariates used for each research question will vary given implementation constraints that will be explained later, such as the inability to use categorical data in our cumulative effects model. Existing literature suggests that factors such as the type of protester, with government-affiliated actors being most successful in instituting political change, and the ambitions of the protesters heavily influence protest success [4]. Another source suggests that non-violent protests are generally most effective because they allow younger demographics that are not equipped to engage in violence to participate, expanding the size of the protest, although this effect varies in the countries they analyzed [5]. Thus, all of our models across the three questions contain information about the tactics used and geographic scope of protests.
 
 ```{r, echo = F, warning = F, message = F}
 df <- read_excel("data/navco3-0full.xlsx")
@@ -481,37 +481,37 @@ df_chill_eda <- df_chill_fn %>%
 mu <- ddply(df_chill_eda, "Timing", summarise, grp.mean = mean(freq_protests))
 ```
 
-# Exploratory Data Analysis
+## Exploratory Data Analysis
 ```{r, echo = F, warning = F, message = F, fig.width = 13}
 # EDA visualization for showing x = government response, y = number of participants, color = participant goals
-df_eda1 <- df_clean[, c("num_partic_event", "st_posture", "camp_goals")]
-df_eda1 <- df_eda1[complete.cases(df_eda1),]
-
-(p1 <- ggplot(data = df_eda1, aes(st_posture, num_partic_event)) +  
-  #facet_grid(.~CRIME_SEV) +
-  geom_jitter(aes(color = camp_goals),alpha = 0.5) +  
-  labs(x = "Government Response", y = "Number of Participants", 
-       title = "Figure 1: Regime Change Associated with More Forceful Regime Responses",
-       colour = "Participant Goals") +
-  theme_light() +
-  ylim(0, 2000000) + # omit one observation with high participant count
-  theme(plot.title = element_text(hjust = 0.5),
-        plot.subtitle = element_text(hjust = 0.5))) 
+# df_eda1 <- df_clean[, c("num_partic_event", "st_posture", "camp_goals")]
+# df_eda1 <- df_eda1[complete.cases(df_eda1),]
+# 
+# (p1 <- ggplot(data = df_eda1, aes(st_posture, log(num_partic_event))) +  
+#   #facet_grid(.~CRIME_SEV) +
+#   geom_jitter(aes(color = camp_goals),alpha = 0.5) +  
+#   labs(x = "Government Response", y = "Number of Participants", 
+#        title = "Figure 1: Regime Change Associated with More Forceful Regime Responses",
+#        colour = "Participant Goals") +
+#   theme_light() +
+#   ylim(0, 2000000) + # omit one observation with high participant count
+#   theme(plot.title = element_text(hjust = 0.5),
+#         plot.subtitle = element_text(hjust = 0.5))) 
 ```
-There are several notable insights from this figure. Regime responses of the highest severity, in which the regime resorts to repression with the intent of killing participants, appear to be triggered be triggered by campaigns in which participants are requesting regime change. This trend seems highly plausible: direct challenges against autocratic regimes would be likely to cause governments to lash out expeditiously and forcefully. Figure 1 also seems to offer some evidence for the idea that large campaigns with greater than 50,000 participants tend to elicit neutral regime responses.
 
-```{r, echo = F, warning = F, message = F}
+```{r, echo = F, warning = F, message = F, fig.height = 4}
 ggplot(df_chill_eda, aes(x = freq_protests, color = Timing)) +
   geom_histogram(binwidth = 100) +
   geom_density(alpha = 0.2) +
   geom_vline(data = mu, aes(xintercept = grp.mean, color = Timing),
              linetype = "dashed") + 
-  labs(title = "Higher Incidence of Low Protest Frequencies Following Severe Responses",
+  labs(title = "Higher Incidence of Low Protest Frequencies After Severe Responses",
        subtitle = "However, Densities Look Similar and Difference Between Means is Moderate",
        x = "Protest Frequency", 
        y = "Count")
 ```
 
+To help understand our third research question on the chilling effect, we created non-stacked histograms that show the distributions of the number of protests in the years before and after repressive events. We can see that for both timing values, the distributions appear to peak for the bar corresponding to between 100 and 200 protests. While the distrsibutions look similar in shape, there is a much greater count of low protest frequencies for the post timing, and the means of each distribution, visualized by the vertical dashed lines, indicate that the post sample mean frequency is lower than the prior sample mean frequency.
 
 # Methodology
 
@@ -588,7 +588,7 @@ log(\mu_i) &= \beta_0 + \beta_1I(Timing_i = Prior) + \beta_2I(Region_i = America
 \end{aligned}
 $$
 
-$$\text{Pr}(ProtestFrequency = ProtestFrequency_i | \mu_i, \alpha) = \frac{\Gamma(ProtestFrequency_i + \alpha^{-1} )}{\Gamma(\alpha^{-1})\Gamma(ProtestFrequency_i + 1)} \left(\frac{1}{1 + \alpha\mu_i}\right )^{\alpha^{-1}} \left(\frac{\alpha\mu_i}{1+\alpha\mu_i}\right)^{ProtestFrequency_i}$$
+$$\text{P}(ProtestFrq = ProtestFrq_i | \mu_i, \alpha) = \frac{\Gamma(ProtestFrq_i + \alpha^{-1} )}{\Gamma(\alpha^{-1})\Gamma(ProtestFrq_i + 1)} \left(\frac{1}{1 + \alpha\mu_i}\right )^{\alpha^{-1}} \left(\frac{\alpha\mu_i}{1+\alpha\mu_i}\right)^{ProtestFrq_i}$$
 
 For the Negative Binomial model, $i$ represents each frequency observation, $\alpha$ is the dispersion parameter, and $\mu_i$ is the mean frequency for a given observation. The covariate of interest is timing, which is an indicator variable that denotes whether the count was observed before or after the repressive event. Additional covariates corresponding to the features of the protest that triggered the repressive event and the severity of repression itself were included to control for confounding effects. 
 
@@ -645,23 +645,6 @@ pres <- presid(m_ord)
 
 The ordinal logistic regression model had the above coefficient estimates and measures of uncertainty. At the $\alpha = 0.05$ significance threshold, the coefficient point estimates are statistically significant for the following variables: regional scope, national scope, international scope, all campaign goal variables, all tactical choice variables, and all region variables. Despite correlative evidence from reviewing relevant literature, the identity of the actors involved in a protest was not statistically significant.  
 
-# Protest Success
-
-There were several statistically significant relationships that we observed given our results. Beginning by looking at the geographic scope indicator variables, the odds of receiving a less repressive and, equivalently, a more conciliatory governmental response for protests that were regional in nature were expected to be approximately 2.048 times those for local protests, holding all else constant. A similar multiplicative odds increase of 1.565 was observed for international protests compared to local protests, while a multiplicative odds decrease of 0.654 was observed for national protests. 
-
-<!--> National protests without international backing less successful beceause viewed as significant threat to regime, regional protests aren't and are likely smaller (and less ambitious?), international protests are more successful because they of diplomacy issues-- once international actors like other countries get involved, govs are more likely to acquiesce to uphold image and relations
-Make sure comparison is always to local protests<-->
-
-Somewhat counterintuitively, we observed negative effect sizes for all of the point estimates of coefficients corresponding to campaign goal variables. For protests with institutional reform, policy change, territorial secession, autonomy, and unknown goals, the odds of being a recipient of a more conciliatory government response, holding other predictors constant, were expected to be approximately 0.520, 0.291, 0.313, 0.285, and 0.244 times those for protests with regime change goals, respectively.
-
-<!--> Compared to regime change protests, all other protests were less likely to get a conciliatory response (lower success). This could perhaps be because regime change protests are more well-organized and larger, making them more likely to force a government's hand<-->
-
-With regard to tactical choice, we observed that protests utilizing both violence and non-violence were associated with a much higher odds of being successful than primarily non-violent protests, while primarily violent protests displayed the opposite relationship with non-violent protests. Holding all else constant, mixed protests were expected to have 8.560 times greater odds of a more conciliatory response when compared to non-violent protests. On the other hand, violent protests were expected to have 0.79 times lower odds of a more conciliatory response when compared to non-violent protests, holding other variables constant. 
-
-<!--> Pure violence is not effective, but mixed approaches that use both civil and violent resistance are more effective. This suggests that when employed right, some use of violence along with civil tactics can be effective<-->
-
-Finally, we examined the associations between our region covariates and the response. For protests occurring in the Americas, Asia, Europe, and the Middle East, the odds of being a recipient of a more conciliatory government response, holding other predictors constant, were expected to be approximately 1.194, 1.185, 0.456, and 2.392 times those for protests occurring in Africa, respectively. Given that the United States and Mexico are governed by democratic republic systems and the former is a highly developed country, and most of the Asian countries analyzed have undergone significant political liberalization as a result of globalization, it is reasonable that these the Americas and Asia are expected to have elevated odds of protest efficacy than Africa, as many African countries are less integrated into global economic and political affairs and are led by autocratic regimes that are generally less concerned with the concerns of their citizenry. As many governments in the Middle East are also authoritarian, it may seem puzzling that protests within this region have a much higher expected odds of a conciliatory response than those in Africa. We posit that this may be due to the greater incidence of organized militant groups in the Middle East that are capable of forcing governments to acquiesce to demands, or the potential skewing of the results due to revolutions such as the Arab Spring from 2010 to 2012. Finally, the observation that protests based in Europe appear even less efficacious than those in Africa likely stems from the fact that only protests within Ukraine and Estonia are analyzed for the European region. Although relatively democratic, these Baltic states were formerly part of the USSR and maintain tight control over their populations which is designed to unite citizens against the ever-looming threat of Russian annexation. An interesting vector of consideration stems from the idea of information flow, with both countries having state-owned mass media and Ukraine being ranked within the bottom half of all countries in terms of the 2017 World Press Freedom Index (RSF). Thus, even as these countries are more democratized than of their African counterparts, their governments may be better equipped to quash protests. 
-
 ## Cumulative Protests
 
 ```{r, echo = F, warning = F, message = F}
@@ -707,14 +690,6 @@ To evaluate the relationship between protest tactics and the hazard of a protest
 
 The WCE Cox model had the above coefficient estimates and measures of uncertainty for the other covariates. At the $\alpha = 0.05$ significance threshold, the coefficient point estimates are statistically significant for every predictor with the exception of injuries. Caution should be exercised when interpreting any significant effect sizes, as some variables that are truly ordinal are treated as continuous due to the constraints of the current implementation of the WCE package. We will articulate how to interpret these results in the discussion.
 
-# Cumulative Protests
-
-When analyzing the hazard ratios of the different scenarios outlined in the methodology section, it becomes apparent that campaigns with consistent non-violent protests are associated with the highest hazard of experiencing a concession. Holding other predictors constant, campaign years consisting of daily non-violent protests were expected to have a 33.926 times higher hazard at the end of the year than campaign years consisting of daily mixed protests. Holding other predictors constant, campaign years consisting of daily non-violent protests were expected to have a 1150.949 times higher hazard at the end of the year than campaign years consisting of daily violent protests. Holding other predictors constant, campaign years consisting of daily non-violent protests were expected to have a 33.926 times higher hazard at the end of the year than campaign years consisting of daily mixed protests. These findings seem to convey that within the context of a campaign, repeated non-violent protests have much higher efficacy for eliciting concessions on the part of a governmental entity than both repeated mixed and violent protests. This offers an interesting contrast to the results obtained from the previous research question, as we observed statistically significant evidence that protests with mixed tactics were expected to have considerably higher odds of acheiving a more conciliatory response than protests with non-violent tactics. The discrepancy can ostensibly be reconciled by the different units of observation in each research question, and the fact that cumulative protest effects are accounted for in this cumulative analysis. While a mixed tactics that utilizes some form of violence may be advantageous for acheiving success in a single, isolated protest, governments appear to be more receptive to campaigns that capitalize primarily on civil resistance. This may be a result of threat perception. When faced with challenges to their power, governments tend to scale their use of coercion and repression to the perceived size of the threat, with greater repression being relied on when threats are seen as large (Ferrara). The fact that the hazard ratio comparing non-violent protests to violent ones is inordinately large offers confirmatory evidence of this interpretation, as recurring instances of primarily violent protests are very likely to be perceived as substantial threats to the regime.
-
-Examining the additional time-varying covariates included in the model, we also notice several intriguing relationships. Holding other variables constant, a one unit increase in fatal protest casualties at time or day $t$ within a campaign year was associated with a 0.190 multiplicative decrease in the hazard. Similarly, a one unit increase in the number of protest injuries    
-
-<!--> PWP Model <-->
-
 ```{r, echo = F, warning = F, message = F}
 pwp1 <- coxph(Surv(Stop, concessions) ~ cluster(id)+ strata(enum) + factor(tactical_choice, order = F) * strata(enum) 
               + region * strata(enum) + factor(geo_scope, order = F) * strata(enum) + 
@@ -740,6 +715,30 @@ pwp1 <- coxph(Surv(Stop, concessions) ~ cluster(id)+ strata(enum) + factor(tacti
 ## Chilling Effect
 
 ```{r, echo = F, warning = F, message = F}
+# t test for difference between two populations, may be biased
+#t.test(x = df_chill_fn$prior, y = df_chill_fn$post)
+
+# bootstrap the mean difference of the two samples
+bootstrapped <- two.boot(df_chill_fn$prior, df_chill_fn$post, mean, 10000)
+
+bootstrapped_mean_diff <- data.frame(bootstrapped$t)
+colnames(bootstrapped_mean_diff) <- "mean_diffs"
+
+ggplot(bootstrapped_mean_diff, aes(x = mean_diffs)) +
+  geom_histogram(color = "green", bins = 20, alpha = 0.8) +
+  geom_vline(xintercept = bootstrapped$t0, size = 1.5) +
+  geom_vline(xintercept = quantile(bootstrapped_mean_diff$mean_diffs, 0.025), size = 1, 
+             linetype = "dashed") +
+  geom_vline(xintercept = quantile(bootstrapped_mean_diff$mean_diffs, 0.975), size = 1,
+             linetype = "dashed") +
+  labs(title = "Statistically Significant Evidence that Means are not the Same",
+       x = "Sample Mean Difference",
+       y = "Bootstrapped Count")
+```
+
+The Welch's T-test gave us an expected true mean difference of 54.53 between prior- and post-repression frequencies at a p-value that was well below the $\alpha = 0.05$ threshold. The plot above shows the distribution of the sample mean differences, as well as the estimate for the true mean difference with the bootstrapped confidence interval.
+
+```{r, echo = F, warning = F, message = F}
 # create continent variable
 df_chill_glm <- df_chill_eda %>% 
   dplyr::mutate(region = case_when(country_name %in% c("algeria", "egypt",
@@ -762,7 +761,7 @@ m_chill_poiss <- glm(freq_protests ~ Timing + region + geo_scope +
 #summary(m_chill_poiss)
 
 # significant evidence of overdispersion
-dispersiontest(m_chill_poiss)
+#dispersiontest(m_chill_poiss)
 
 # Negative Binomial Model 
 m_chill_nb <- glm.nb(freq_protests ~ Timing + region + factor(geo_scope, order = F) + 
@@ -781,14 +780,15 @@ m_chill_nb_diff <- glm.nb(abs(diff) ~ region + geo_scope +
 
 #summary(m_chill_nb_diff)
 #summary(m_chill_nb)
-plot(m_chill_nb$fitted.values,m_chill_nb$residuals, xlab = "Fitted Values", ylab = "Pearson Residuals", main = "Residual Plot Shows No Pattern in Residuals")
-plot(m_chill_nb_diff$fitted.values,m_chill_nb_diff$residuals, xlab = "Fitted Values", ylab = "Pearson Residuals", main = "Residual Plot Shows No Pattern in Residuals")
+# plot(m_chill_nb$fitted.values,m_chill_nb$residuals, xlab = "Fitted Values", ylab = "Pearson Residuals", main = "Residual Plot Shows No Pattern in Residuals")
+# plot(m_chill_nb_diff$fitted.values,m_chill_nb_diff$residuals, xlab = "Fitted Values", ylab = "Pearson Residuals", main = "Residual Plot Shows No Pattern in Residuals")
 nb_table <- tidy(m_chill_nb)
 nb_table$lower <- nb_table$estimate - 1.96 * nb_table$`std.error`
 nb_table$upper <- nb_table$estimate + 1.96 * nb_table$`std.error`
-knitr::kable(nb_table, digits = 3, caption = "Negative Binomial Model for Chilling Effect", col.names = c('Term','Estimate', 'Standard Error', 'Statistic' , 'P-Value', "Lower", "Upper")) %>%
-  kable_styling(latex_options = "HOLD_position")
+# knitr::kable(nb_table, digits = 3, caption = "Negative Binomial Model for Chilling Effect", col.names = c('Term','Estimate', 'Standard Error', 'Statistic' , 'P-Value', "Lower", "Upper")) %>%
+#   kable_styling(latex_options = "HOLD_position")
 ```
+
 | Term    | Estimate  | Standard Error |p.value| 95% CI
 |--------------------------|-----|-----|---|----------
 | Timing = Prior|-0.004 |2.696 |0.818|-0.034 to 0.027|
@@ -815,57 +815,105 @@ knitr::kable(nb_table, digits = 3, caption = "Negative Binomial Model for Chilli
 | Government Response = Intended to Kill |0.052| 0.016|0.001|0.021 to 0.083|
 | Year |0.085| 0.001|<0.001|0.082 to 0.087|
 
+The Negative Binomial model had the above coefficient estimates and measures of uncertainty. At the $\alpha = 0.05$ significance threshold, the coefficient point estimates are statistically significant for the following variables: Americas region, Asia region, Europe region, Middle Eastern region, regional scope, global scope, international actor ID, all campaign goal covariates, violent tactics, both government response indicator variables, and year. Our primary covariate of interest, timing, was not statistically significant at the $\alpha = 0.05$ level and had a confidence interval that contained zero.
 
-```{r, echo = F, warning = F, message = F}
-# t test for difference between two populations, may be biased
-t.test(x = df_chill_fn$prior, y = df_chill_fn$post)
+# Discussion
 
-# bootstrap the mean difference of the two samples
-bootstrapped <- two.boot(df_chill_fn$prior, df_chill_fn$post, mean, 10000)
+## Protest Success
 
-bootstrapped_mean_diff <- data.frame(bootstrapped$t)
-colnames(bootstrapped_mean_diff) <- "mean_diffs"
+There were several statistically significant relationships that we observed given our results. Beginning by looking at the geographic scope indicator variables, the odds of receiving a less repressive and, equivalently, a more conciliatory governmental response for protests that were regional in nature were expected to be approximately 2.048 times those for local protests, holding all else constant. A similar multiplicative odds increase of 1.565 was observed for international protests compared to local protests, while a multiplicative odds decrease of 0.654 was observed for national protests. Regional protests may be more successful than local ones in acheiving conciliatory responses because they are inherently larger, making it easier to acheive their goals. However, increasing scope only appears to work up to a certain point. The finding that national protests without international backing are less successful than local ones may stem from the threat that they pose to the regime, outweighing any benefits from greater scale. The higher efficacy of international protests compared to the baseline indicates a necessary precursor to large scale protest success: once international actors get involved in domestic issues, governments are seemingly more likely to acquiesce, whether it be to uphold their diplomatic relations or image in general. 
 
-ggplot(bootstrapped_mean_diff, aes(x = mean_diffs)) +
-  geom_histogram(color = "green", bins = 20, alpha = 0.8) +
-  geom_vline(xintercept = bootstrapped$t0, size = 1.5) +
-  geom_vline(xintercept = quantile(bootstrapped_mean_diff$mean_diffs, 0.025), size = 1, 
-             linetype = "dashed") +
-  geom_vline(xintercept = quantile(bootstrapped_mean_diff$mean_diffs, 0.975), size = 1,
-             linetype = "dashed") +
-  labs(title = "Statistically Significant Evidence that Means are not the Same",
-       x = "Sample Mean Difference",
-       y = "Bootstrapped Count")
-```
+Somewhat counterintuitively, we observed negative effect sizes for all of the point estimates of coefficients corresponding to campaign goal variables. For protests with institutional reform, policy change, territorial secession, autonomy, and unknown goals, the odds of being a recipient of a more conciliatory government response, holding other predictors constant, were expected to be approximately 0.520, 0.291, 0.313, 0.285, and 0.244 times those for protests with regime change goals, respectively. This suggests a nuance to the previous findings concerning scope. Protests that seek to completely topple existing institutional structures would be expected to be driven by protesters that are more fervent about their goals, hence making these protests more forceful.
+
+With regard to tactical choice, we observed that protests utilizing both violence and non-violence were associated with a much higher odds of being successful than primarily non-violent protests, while primarily violent protests displayed the opposite relationship with non-violent protests. Holding all else constant, mixed protests were expected to have 8.560 times greater odds of a more conciliatory response when compared to non-violent protests. On the other hand, violent protests were expected to have 0.79 times lower odds of a more conciliatory response when compared to non-violent protests, holding other variables constant. The inefficacy of pure violence illustrates that civil resistance components are crucial for influencing protest success. It appears that mixed protests may be the ideal candiate for protest tactics. The literature cited in the variable selection portion supports this idea in that mixed protests can both integrate younger demographics, increasing the size of the protest, and catpialize upon the use of more forceful techniques when necessary.
+
+Finally, we examined the associations between our region covariates and the response. For protests occurring in the Americas, Asia, Europe, and the Middle East, the odds of being a recipient of a more conciliatory government response, holding other predictors constant, were expected to be approximately 1.194, 1.185, 0.456, and 2.392 times those for protests occurring in Africa, respectively. Given that the United States and Mexico are governed by democratic republic systems and the former is a highly developed country, and most of the Asian countries analyzed have undergone significant political liberalization as a result of globalization, it is reasonable that these the Americas and Asia are expected to have elevated odds of protest efficacy than Africa, as many African countries are less integrated into global economic and political affairs and are led by autocratic regimes that are generally less concerned with the concerns of their citizenry. As many governments in the Middle East are also authoritarian, it may seem puzzling that protests within this region have a much higher expected odds of a conciliatory response than those in Africa. We posit that this may be due to the greater incidence of organized militant groups in the Middle East that are capable of forcing governments to acquiesce to demands, or the potential skewing of the results due to revolutions such as the Arab Spring from 2010 to 2012. Finally, the observation that protests based in Europe appear even less efficacious than those in Africa likely stems from the fact that only protests within Ukraine and Estonia are analyzed for the European region. Although relatively democratic, these Baltic states were formerly part of the USSR and maintain tight control over their populations which is designed to unite citizens against the ever-looming threat of Russian annexation. An interesting vector of consideration stems from the idea of information flow, with both countries having state-owned mass media and Ukraine being ranked within the bottom half of all countries in terms of the 2017 World Press Freedom Index (RSF). Thus, even as these countries are more democratized than of their African counterparts, their governments may be better equipped to quash protests. 
+
+## Cumulative Protests
+
+When analyzing the hazard ratios of the different scenarios outlined in the methodology section, it becomes apparent that campaigns with consistent non-violent protests are associated with the highest hazard of experiencing a concession. Holding other predictors constant, campaign years consisting of daily non-violent protests were expected to have a 33.926 times higher hazard at the end of the year than campaign years consisting of daily mixed protests. Holding other predictors constant, campaign years consisting of daily non-violent protests were expected to have a 1150.949 times higher hazard at the end of the year than campaign years consisting of daily violent protests. Holding other predictors constant, campaign years consisting of daily non-violent protests were expected to have a 33.926 times higher hazard at the end of the year than campaign years consisting of daily mixed protests. These findings seem to convey that within the context of a campaign, repeated non-violent protests have much higher efficacy for eliciting concessions on the part of a governmental entity than both repeated mixed and violent protests. This offers an interesting contrast to the results obtained from the previous research question, as we observed statistically significant evidence that protests with mixed tactics were expected to have considerably higher odds of acheiving a more conciliatory response than protests with non-violent tactics. The discrepancy can ostensibly be reconciled by the different units of observation in each research question, and the fact that cumulative protest effects are accounted for in this cumulative analysis. While a mixed tactics that utilizes some form of violence may be advantageous for acheiving success in a single, isolated protest, governments appear to be more receptive to campaigns that capitalize primarily on civil resistance. This may be a result of threat perception. When faced with challenges to their power, governments tend to scale their use of coercion and repression to the perceived size of the threat, with greater repression being relied on when threats are seen as large (Ferrara). The fact that the hazard ratio comparing non-violent protests to violent ones is inordinately large offers confirmatory evidence of this interpretation, as recurring instances of primarily violent protests are very likely to be perceived as substantial threats to the regime.
+
+Examining the additional time-varying covariates included in the model, we also notice several intriguing relationships. Holding other variables constant, a one unit increase in fatal protest casualties at time or day $t$ within a campaign year is associated with a 0.190 multiplicative decrease in the hazard. Similarly, one unit increase in the number of protests at time or day $t$ is associated with a 2.069 multiplicative increase in the hazard, holding all else constant. Geographic scope, damage, and economic impact were ordinal variables in the original dataset, so individual point estimates have no meaningful interpretations. However, we can still make note of the direction of these estimates to describe the general relationship between the predictors and the hazard of acheiving a concession. Geographic scope, damage, and economic impact are positively associated with the hazard. While our foremost goal was to analyze the cumulative effects of protests when accounting for tactics, these findings provide additional color to our conclusions. The three ordinal predictors and the number of protests on a single day covariate all relate to the size and/or disruptiveness of a protest within a campaign year. The positive associations indicate that campaigns with larger and more disruptive protests are at greater 'risk' to experience a concession at any given time. On the other hand, higher casualties are associated with lower hazard, which may be because governments with a history of using violence are fundamentally more difficult to coerce. This is consistent with our findings that repeated violent tactics are the least successful campaign strategy.
+
+## Chilling Effect 
+
+The Welch's T-test gave us statistically significant evidence that the true mean difference between prior- and post-repressive event frequencies was 54.53, with a bootstrapped 95`%` confidence interval ranging from 32.38 to 77.06286. This gave us some evidence that the incidence of protests is higher in the year preceding a repressive event than in the year after it, suggesting the existence of a chilling effect. While the Welch's T-test and bootstrapped confidence interval gave us initial statistically significant evidence of this effect, our Negative Binomial model did not give us compelling evidence that timing was truly meaningful. The timing variable, which indicates whether an observation occurred before or after a repressive event, was not statistically significant. Since our Negative Binomial model controls for other important covariates, we are unable to conclude that a chilling effect exists, and that the mean of the protest frequencies before a repressive event are truly different from the mean of the protest frequencies after a repressive event.  
+
+## Implications 
+
+On an individual protest level, we found that more ambitious protests that are aimed to change the regime within the country are associated with higher odds of being successful, perhaps because these are larger and more well-organized. We also saw from our ordinal model that protests that were mixed in their approach were associated with higher odds of achieving a more conciliatory government response than non-violent protests. However, for an individual campaign, the hazard ratios were the highest for repeated non-violent protests in the WCE model. This may indicate that once you take into account the cumulative effects of protests on government response, regimes are more likely to respond positively to repeated protests without any violence. In addition, we saw that greater geographic scope, damage, economic impact, and same-day protests within campaigns appeared be positively associated with the hazard of achieving a concession for a campaign. Finally, on the chilling effect question, we did not find any statistically significant evidence for a difference in the protest counts before and after a repressive event, indicating that protesters are not meaningfully dissuaded by repression. 
+
+## Strengths and Weaknesses
+
+Our analysis has several notable strengths. The first is the rigorous model selection procedures put in place for each model, in which the assumptions for each model were carefully evaluated and validated. The creativity of the approaches, such as using the WCE Cox model for cumulative effects question, was advantageous, as it allowed us to answer inquiries that existing procedures that have proved too challenging given existing procedures in the literature. The fact that protests were considered in tandem and in isolation was also useful, as it allowed us to differentiate between successful tactics for individual protests and those for campaigns. Several limitations of the analysis stem from the missingness in the dataset, with some variables missing tens of thousands of observations and even making imputation inappropriate. Certain variables, such as the number of protesters involved, would have been particularly useful. The manual coding of the dataset is also prone to errors, as well as the fact that information is taken second-hand from news reports. Finally, the WCE model implementation in R is constrained to a binary response variable and numeric or binary predictors, resulting in information loss and making it difficult to interpret variables that were truly ordinal.
+
+## Future Directions
+
+Future analyses should first focus on finding accurate information about the size of protests, either with regard to the number of protesters involved or the number of significant actors involved. Literature shows that this is an important factor for protest success, so analyzing these variables would be the next logical extension of our analysis. Additionally, future research should address the temporal-spatial component of protests, as nearby protests undoubtedly influence each other and protest success depend on a variety of time-varying factors as countries globalize and democratize. This would allow for a more rigorous understanding of how protests work and even interact with one another.
 
 # References
 
-[1] Chenoweth E, Pinckney J, Lewis O. "Days of rage: Introducing the NAVCO 3.0 dataset." SAGE. Journal of Peace Research. 55 (4): 524-534.
+[1] https://www.nytimes.com/interactive/2020/07/03/us/george-floyd-protests-crowd-size.html
 
-[2] Huet-Vaughn E. "Quiet Riot: Estimating a Causal Effect of Protest Violence." Working Paper. 1-41.
+[2] Chenoweth E, Pinckney J, Lewis O. "Days of rage: Introducing the NAVCO 3.0 dataset." SAGE. Journal of Peace Research. 55 (4): 524-534.
 
-[3] Chenoweth E.
+[3] Huet-Vaughn E. "Quiet Riot: Estimating a Causal Effect of Protest Violence." Working Paper. 1-41.
 
 [4] McAdam D. "Tactical Innovation and the Pace of Insurgency." American Sociological Association. American Sociological Review. 48 (6): 735-754.
 
-[5]
-
 [6] Danieli C, Sheppard T, Costello R, Dixon W, Abrahamowicz M. "Modeling of cumulative effects of time-varying drug exposures on within-subject changes in a continuous outcome." SSMR. 29(9): 2554-2568.
 
-Lall, R. "The Application of Ordinal Regression Models in Quality of Life Scales used in Gerontology." University of Sheffield. 1-315.
+[7] Lall, R. "The Application of Ordinal Regression Models in Quality of Life Scales used in Gerontology." University of Sheffield. 1-315.
 
-Chenoweth E, Lewis O (2013). "Nonviolent and Violent Campaigns and Outcomes (NAVCO) Data Project." Journal of Peace Research. 1-19. 
+[8] Chenoweth E, Lewis O (2013). "Nonviolent and Violent Campaigns and Outcomes (NAVCO) Data Project." Journal of Peace Research. 1-19. 
 
-(RSF). https://rsf.org/en/ranking/2017
+[9] (RSF). https://rsf.org/en/ranking/2017
 
-Sylvestre M, Beauchamp M, Abrahamowicz M. "WCE package: weighted cumulative exposure models." CHUM Research Centre. 1-10.
+[10] Sylvestre M, Beauchamp M, Abrahamowicz M. "WCE package: weighted cumulative exposure models." CHUM Research Centre. 1-10.
 
-Ferrara F (2003). "Why Regimes Create Disorder: Hobbes's Dilemma during a Rangoon Summer." The Journal of Conflict Resolution. 47(3): 302-335.
+[11] Ferrara F (2003). "Why Regimes Create Disorder: Hobbes's Dilemma during a Rangoon Summer." The Journal of Conflict Resolution. 47(3): 302-335.
 
 
 # Appendix
 
-<!-- Ordinal Regression Prop Odds -->
+# Protest Success: Data Dictionary 
+
+| Variable                                                  | Definition                                                                                                                                                                                                    |
+|-----------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Governmental Response (outcome)                                  | Full accommodation, Material Concessions, Non-Material Concessions, Neutral, Non-Material and Non-Physical Repression, Material and/or Physical Repression Short of Killing, Material and/or Physical Repression Intended to Result in Death                                                                                                        |
+| Geographic Scope                           | Local, Subnational or Regional, National, International Regional, Global                                                                                                  |
+| Actor ID                               | State, International, Non-State  |
+| Campaign Goals                         | Regime Change, Significant Institutional Reform, Policy Change, Territorial Secession, Greater Autonomy, Unknown                       |
+| Tactics                                          | Primarily Non-Violent Event, Mixed Non-Violent and Violent Activity, Primarily Violent Event                           |
+| Region                                          | Africa, Americas, Asia, Europe, Middle East  |
+
+## Cumulative Protests: Data Dictionary
+
+| Variable                                                  | Definition                                                                                                                                                                                                    |
+|-----------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Concessions (outcome)                                  |  Concessions Achieved (1), No Concessions (0)      |
+| Tactics (exposure variable)                           | Primarily Non-Violent Event, Mixed Non-Violent and Violent Activity, Primarily Violent Event                       |
+| Geographic Scope                               | Local, Subnational or Regional, National, International Regional, Global  |
+| Direct Damage                         | Minor or No Property /Economic Damage,  Moderate Property/Economic Damage, Significant Property/ Economic Damage, Substantial Losses Estimated Upwards of Millions of USD                      |
+| Broad Economic Impact                                          | None, Minor, Significant Impact to Local or Regional Interests, Heavy Impact that Affects the National Economy             |
+| Fatal Casualties                                          | Number of Fatalities or Casualties   |
+| Injuries                                          | Number of Injuries   |
+| Protest Concentration                                          | Number of Protests that Day   |
+
+## Chilling EFfect: Data Dictionary
+
+| Variable                                                  | Definition                                                                                                                                                                                                    |
+|-----------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Protest Frequency  (outcome)                                  | Number of Protests in the Year Preceding or Following a Repressive Event                   |
+| Region                           | Africa, Americas, Asia, Europe, Middle East        |
+| Timing                           | Prior, Post        |
+| Actor ID                               | State, International, Non-State, Non-Aligned  |
+| Campaign Goals                         | Regime Change, Significant Institutional Reform, Policy Change, Territorial Secession, Greater Autonomy, Unknown                       |
+| Tactics                                          | Primarily Non-Violent Event, Mixed Non-Violent and Violent Activity, Primarily Violent Event                           |
+| Government Repressive Response                                          | Non-Material and Non-Physical, Material and/or Physical Short of Killing, Material and/or Physical Intended to Result in Death  |
+| Year                           | Year of Repressive Event        |
+
+## Ordinal Model: Partial Proportional Odds Assumption
 
 ```{r, echo = F, warning = F, message = F}
 #https://stats.idre.ucla.edu/r/dae/ordinal-logistic-regression/
@@ -886,7 +934,7 @@ cat_table <- with(df_ord, summary(as.numeric(st_posture) ~  factor(geo_scope, or
                                   fun = sf))
 ```
 
-```{r echo = F, warning = F, message = F, fig.align='center', fig.height = 18, fig.width = 9}
+```{r echo = F, warning = F, message = F, fig.align='center', fig.height = 16, fig.width = 9}
 # this allows us to see the logits relative to the logit for y >= 2
 cat_table[,8] <- cat_table[,8] - cat_table[,3]
 cat_table[,7] <- cat_table[,7] - cat_table[,3]
@@ -896,12 +944,13 @@ cat_table[,4] <- cat_table[,4] - cat_table[,3]
 cat_table[,3] <- cat_table[,3] - cat_table[,3]
 
 plot(cat_table, which = 1:7, pch = 1:7, xlab = "Difference in Log Odds", 
-     main = "Figure 3: Proportional Odds Assumption Satisfied by Data", 
+     main = "Proportional Odds Assumption Satisfied by Data", 
      xlim = range(cat_table[,3:8]))
 ```
 
-<!-- Negative Binomial -->
+## Negative Binomial Model Diagnostics
 ```{r}
-scatter.smooth(1:length(fitted(m_chill_nb)), rstandard(m_chill_nb, type = 'deviance'), col = 'gray')
+scatter.smooth(1:length(fitted(m_chill_nb)), rstandard(m_chill_nb, type = 'deviance'), col = 'gray', xlab = "Observation ID", ylab = "Deviance Residuals", main = "Residuals Shows No Clear Patterns")
+# plot(m_chill_nb$fitted.values,m_chill_nb$residuals, xlab = "Fitted Values", ylab = "Pearson Residuals", main = "Residual Plot Shows No Pattern in Residuals")
 ```
 
